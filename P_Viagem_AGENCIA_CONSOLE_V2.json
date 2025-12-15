@@ -1,0 +1,381 @@
+{
+  "name": "AGENCIA DE VIAGENS CONSOLE - v1",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4144,
+        2176
+      ],
+      "id": "6e4da969-ed16-4891-b4d5-b5296e6f04b8",
+      "name": "inputTest",
+      "webhookId": "8b8fc783-f576-4ac7-9e83-8942f7b1a3a3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "94127c6c-e9ab-4ead-a5ab-e3fbebf4fc71",
+              "name": "query",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "0b8a8ff0-1ff9-45ba-9c4e-27bb639f6f37",
+              "name": "identifier",
+              "value": "=test-n8n:{{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "08017764-9c23-48fe-a8a6-1f863606f0eb",
+              "name": "telefone",
+              "value": "telefone de teste aqui",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3856,
+        2176
+      ],
+      "id": "47141df6-12ed-4d46-a881-fee7992b71b4",
+      "name": "trataDados"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            },
+            {
+              "name": "identifier"
+            },
+            {
+              "name": "telefone"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3824,
+        2480
+      ],
+      "id": "5317d2a1-3530-4134-9b4e-fcad572d9ee6",
+      "name": "recebeDadosExternos"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3488,
+        2192
+      ],
+      "id": "c91961e6-7575-4859-88cf-73aff748aa6f",
+      "name": "agrupaDados"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2960,
+        2496
+      ],
+      "id": "17b06978-a617-4e2b-88a3-4f9a78c552a3",
+      "name": "openai4.1Mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "DmoP52AOXhbHyxyX",
+          "name": "Lena AI OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "# AGENTE ROTEADOR - Agência de Viagens\n\n## Identidade\n- **Nome:** Roteador Principal de Atendimento\n- **Função:** Agente de Análise e Redirecionamento de Viajantes\n- **Empresa:** Agência de Viagens (Noares)\n\n## Objetivo Principal\nAnalisar a intenção da mensagem do viajante e acionar o agente especialista mais adequado.\n\n## Regras de Roteamento\n- **Se a intenção for reservar voo, hotel ou pacote, ou verificar disponibilidade:** Acione o `agente_vendas`.\n- **Se a intenção for tirar dúvidas gerais (bagagem, visto, cancelamento, contato, endereço da agência):** Acione o `agente_faq`.\n- **Para TODO o resto (primeiro contato, saudação, pedir dicas de viagem, 'para onde ir'):** Acione o `agente_inspiracao`. Ele é o responsável por iniciar a conversa e qualificar o cliente.\n- **Se a pergunta for detalahda sobre um destino específico (ex: 'melhor época para ir a Paris', 'o que fazer em Cancún'):** Acione `agente_especialista_destinos`.\n\n## Regra de Saída Final\nSua única saída deve ser a resposta **EXATA** fornecida pelo subagente acionado."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -2960,
+        2192
+      ],
+      "id": "6f4c0fbf-6bed-48e2-9d5c-62c4526b09ed",
+      "name": "agente_roteador"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('agrupaDados').first().json.identifier }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -2784,
+        2496
+      ],
+      "id": "e16df0ce-e3e0-45a5-8c59-0fe558de00e2",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "lkXnrfeCDBqgODYW",
+          "name": "Postgres Lia Assessora"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Acione este agente para qualquer ação relacionada a vendas, reservas de voos, hotéis ou pacotes.",
+        "text": "={{ $('agrupaDados').item.json.query }}",
+        "options": {
+          "systemMessage": "=# SUBAGENTE: Agente de Vendas\n\n## Identidade\n- **Contexto:** Agente virtual de vendas da Agência Noares.\n\n## Objetivos\n1.  Identificar o destino e datas desejadas.\n2.  Verificar disponibilidade.\n3.  **Handoff para Humano:** Quando o cliente decidir fechar o pacote ou quiser efetuar o pagamento, use a ferramenta `criar_lead_crm` para registrar o interesse e transferir.\n\n## Ferramentas Disponíveis\n- `think`: Planejar ações.\n- `verificar_disponibilidade_agenda`: Consultar disponibilidade (simulada via Calendar).\n- `criar_lead_crm`: **USO OBRIGATÓRIO AO FECHAR VENDA.** Registra o lead no Supabase e avisa o corretor.\n- `criar_reserva`: Cria 'pré-reserva' no Calendar.\n\n## Fluxo de Venda\n1.  Identificar necessidade.\n2.  Checar disponibilidade.\n3.  Sugerir opções.\n4.  Ao confirmar interesse: Peça Nome e Email.\n5.  Acione `criar_lead_crm`.\n6.  Confirme transferência: \"Perfeito! Já passei tudo para nosso consultor humano finalizar o pagamento e emitir seus vouchers. Ele vai te chamar em instantes.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -1840,
+        2224
+      ],
+      "id": "2c2a06cb-4dac-41e6-8a22-284e16b94b38",
+      "name": "agente_vendas"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Acione este agente para FAQ e infos gerais.",
+        "text": "={{ $('agrupaDados').item.json.query }}",
+        "options": {
+          "systemMessage": "=# SUBAGENTE: FAQ\n\n## Objetivo\nResponder perguntas sobre bagagem, vistos, endereço da agência, formas de pagamento aceitas.\n\n## Base de Conhecimento\n- Endereço: Av. Principal, 123.\n- Pagamento: Pix, Cartão em até 12x.\n- Visto: Para EUA precisa, Europa apenas passaporte (por enquanto)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -1232,
+        2208
+      ],
+      "id": "d4ee14a6-e6ea-4e4e-b642-692a6fccf04e",
+      "name": "agente_faq"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Agente de inspiração para primeiro contato e sugestão de destinos.",
+        "text": "={{ $('agrupaDados').item.json.query }}",
+        "options": {
+          "systemMessage": "=# SUBAGENTE: Inspiração e Qualificação\n\n## Identidade\n- **Nome:** Sofia (Consultora de Viagens)\n- **Objetivo:** Engajar o cliente, descobrir preferências (Praia vs Cidade, Frio vs Calor) e sugerir destinos incríveis com fotos.\n\n## Ferramentas\n- `think`: Planejar.\n- `buscar_midia_destino`: Mostrar fotos de destinos (Paris, Disney, Maldivas, Cancún).\n\n## Fluxo\n1.  Boas vindas.\n2.  Qualificação: \"Qual seu estilo de viagem?\"\n3.  Sugestão: Use `buscar_midia_destino` para encantar.\n4.  Transição: \"Gostou? Quer ver datas para esse destino?\" -> Isso levará ao `agente_vendas` na próxima interação."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -2464,
+        2224
+      ],
+      "id": "d3d4c0d5-d943-4321-a799-116d5dc52109",
+      "name": "agente_inspiracao"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Especialista em destinos específicos.",
+        "text": "={{ $('agrupaDados').item.json.query }}",
+        "options": {
+          "systemMessage": "Detalhes sobre melhor época, clima e atrações de destinos específicos."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -864,
+        2208
+      ],
+      "id": "da18a626-3e15-4e58-b47f-dbbc08f635b3",
+      "name": "agente_especialista_destinos"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+           "__rl": true,
+           "value": "9NSEyVP1GlxvrKQ2",
+           "mode": "list",
+           "cachedResultName": "Procedimentos"
+        },
+        "filters": {
+          "conditions": [
+            {
+               "keyName": "nomeProcedimento",
+               "condition": "like",
+               "keyValue": "={{ $fromAI('conditions0_Value', `O nome do destino`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1,
+      "position": [
+        -2320,
+        2016
+      ],
+      "id": "6a092525-7efd-45a2-9636-4a8cec644bec",
+      "name": "buscar_midia_destino"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        -2464,
+        2080
+      ],
+      "id": "9fcaf034-7523-4562-8447-680bad9612d4",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO leads (phone, name, email, destination_interest, status, ai_summary) VALUES ('{{$fromAI(\"phone\")}}', '{{$fromAI(\"name\")}}', '{{$fromAI(\"email\")}}', '{{$fromAI(\"destination\")}}', 'payment_pending', '{{$fromAI(\"summary\")}}') RETURNING id;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.4,
+      "position": [
+        -1632,
+        2000
+      ],
+      "id": "supa_create_lead",
+      "name": "criar_lead_crm",
+      "credentials": {
+        "postgres": {
+          "id": "lkXnrfeCDBqgODYW",
+          "name": "Supabase Lia Assessora"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "agrupaDados": {
+      "main": [
+        [
+          {
+            "node": "agente_roteador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "openai4.1Mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "agente_roteador",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "agente_vendas",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "agente_faq",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "agente_inspiracao",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "agente_especialista_destinos",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "agente_roteador",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "agente_inspiracao",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "agente_faq",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "agente_vendas",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "agente_especialista_destinos",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar_midia_destino": {
+      "ai_tool": [
+        [
+          {
+             "node": "agente_inspiracao",
+             "type": "ai_tool",
+             "index": 0
+          }
+        ]
+      ]
+    },
+    "supa_create_lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente_vendas",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

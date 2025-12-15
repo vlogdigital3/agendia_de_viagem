@@ -1,0 +1,217 @@
+{
+    "name": "AGENCIA DE VIAGENS LEMBRETES - v1",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 8
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                -736,
+                2544
+            ],
+            "id": "trigger_diario",
+            "name": "Disparo Diario (08:00)"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "1",
+                            "name": "consultor",
+                            "value": "Equipe Noares",
+                            "type": "string"
+                        },
+                        {
+                            "id": "2",
+                            "name": "id_agenda",
+                            "value": "seu_id_de_calendario_aqui@group.calendar.google.com",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -480,
+                2544
+            ],
+            "id": "define_calendario",
+            "name": "Configurar Calendario"
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "calendar": {
+                    "__rl": true,
+                    "value": "={{ $json.id_agenda }}",
+                    "mode": "id"
+                },
+                "returnAll": true,
+                "options": {
+                    "timeMin": "={{ $now.plus(1, 'days').startOf('day') }}",
+                    "timeMax": "={{ $now.plus(1, 'days').endOf('day') }}"
+                }
+            },
+            "type": "n8n-nodes-base.googleCalendar",
+            "typeVersion": 1.2,
+            "position": [
+                -240,
+                2544
+            ],
+            "id": "busca_viagens",
+            "name": "Buscar Viagens Amanha",
+            "credentials": {
+                "googleCalendarOAuth2Api": {
+                    "id": "1VrcmzO7tnetZSRV",
+                    "name": "Instituto Philippe Google Calendar"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=# PERSONA\nVocê é Sofia, a assistente virtual de viagens da Agência Noares. \n\n# OBJETIVO\nCriar uma mensagem de lembrete animada para o cliente que viaja **AMANHÃ**!\n\n# DADOS\n- Cliente: {{ $json.summary }} (O título do evento geralmente é o nome)\n- Data/Hora: {{ $json.start.dateTime }}\n- Destino/Detalhes: {{ $json.description }}\n\n# INSTRUÇÕES\n1. Saudação animada.\n2. Lembre que a viagem é amanhã!\n3. Diga para não esquecer documentos/passaporte.\n4. Mande um abraço da equipe Noares.\n5. APENAS o texto da mensagem.",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                60,
+                2544
+            ],
+            "id": "agente_redator_lembrete",
+            "name": "Redator de Lembretes (IA)"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "URL_DA_SUA_API_EVOLUTION/message/sendText/NOME_INSTANCIA",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "SUA_API_KEY"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "number",
+                            "value": "5511999999999"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.output }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                400,
+                2544
+            ],
+            "id": "envia_whatsapp",
+            "name": "Enviar WhatsApp (Evolution)"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4.1-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4.1-mini"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                60,
+                2768
+            ],
+            "id": "modelo_openai",
+            "name": "GPT-4o Mini",
+            "credentials": {
+                "openAiApi": {
+                    "id": "DmoP52AOXhbHyxyX",
+                    "name": "Lena AI OpenAi"
+                }
+            }
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "trigger_diario": {
+            "main": [
+                [
+                    {
+                        "node": "define_calendario",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "define_calendario": {
+            "main": [
+                [
+                    {
+                        "node": "busca_viagens",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "busca_viagens": {
+            "main": [
+                [
+                    {
+                        "node": "agente_redator_lembrete",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "agente_redator_lembrete": {
+            "main": [
+                [
+                    {
+                        "node": "envia_whatsapp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "modelo_openai": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "agente_redator_lembrete",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
