@@ -173,13 +173,22 @@ export default function WhatsAppPage() {
     }
 
     const updateBehavior = async (key: string, value: boolean) => {
-        const newBehavior = { ...configs.behavior, [key]: value }
+        if (!configs) return
+        const currentBehavior = configs.behavior || {
+            view_status: false,
+            reject_calls: false,
+            sync_history: false,
+            always_online: false,
+            ignore_groups: true,
+            read_messages: false
+        }
+        const newBehavior = { ...currentBehavior, [key]: value }
         const { error } = await supabase.from('whatsapp_configs').update({ behavior: newBehavior }).eq('id', configs.id)
         if (!error) setConfigs({ ...configs, behavior: newBehavior })
     }
 
     const addToWhitelist = async () => {
-        if (!whitelistNum) return
+        if (!whitelistNum || !configs) return
         const newWhitelist = [...(configs.whitelist || []), whitelistNum]
         const { error } = await supabase.from('whatsapp_configs').update({ whitelist: newWhitelist }).eq('id', configs.id)
         if (!error) {
@@ -189,6 +198,7 @@ export default function WhatsAppPage() {
     }
 
     const removeFromWhitelist = async (num: string) => {
+        if (!configs || !configs.whitelist) return
         const newWhitelist = configs.whitelist.filter((n: string) => n !== num)
         const { error } = await supabase.from('whatsapp_configs').update({ whitelist: newWhitelist }).eq('id', configs.id)
         if (!error) setConfigs({ ...configs, whitelist: newWhitelist })
@@ -204,7 +214,7 @@ export default function WhatsAppPage() {
         return () => clearInterval(interval)
     }, [status])
 
-    if (loading) return (
+    if (loading || !configs) return (
         <div className="flex items-center justify-center h-full">
             <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
         </div>
@@ -349,7 +359,7 @@ export default function WhatsAppPage() {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => updateBehavior(item.id, !configs.behavior[item.id])}
+                                        onClick={() => updateBehavior(item.id, !(configs.behavior?.[item.id] ?? false))}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${configs.behavior?.[item.id] ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
                                             }`}
                                     >
