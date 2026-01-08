@@ -13,6 +13,7 @@ type Package = {
     images: string[]
     videos: string[]
     active: boolean
+    featured: boolean
 }
 
 interface PackageModalProps {
@@ -30,6 +31,7 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
     const [videos, setVideos] = useState<string[]>([])
     const [isUploading, setIsUploading] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [featured, setFeatured] = useState(false)
 
     // Reset or populate form
     useEffect(() => {
@@ -37,15 +39,17 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
             if (item) {
                 setTitle(item.title)
                 setDescription(item.description || '')
-                setPrice(item.price.toString())
+                setPrice(item.price?.toString() || '')
                 setImages(item.images || [])
                 setVideos(item.videos || [])
+                setFeatured(item.featured || false)
             } else {
                 setTitle('')
                 setDescription('')
                 setPrice('')
                 setImages([])
                 setVideos([])
+                setFeatured(false)
             }
         }
     }, [isOpen, item])
@@ -105,10 +109,11 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
             const payload = {
                 title,
                 description,
-                price: parseFloat(price.replace(',', '.')),
+                price: parseFloat(price.replace(',', '.')) || 0,
                 images,
                 videos,
-                active: true
+                active: true,
+                featured
             }
 
             let error;
@@ -185,6 +190,28 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                                 placeholder="Descreva os detalhes, pontos turísticos e benefícios do pacote..."
                                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white resize-none"
                             />
+                        </div>
+
+                        {/* Featured Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/10 md:col-span-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/20 rounded-lg text-primary">
+                                    <Check className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Destaque na Página Inicial</p>
+                                    <p className="text-xs text-gray-500">Exibir este pacote na seção de "Ofertas Especiais" do site.</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setFeatured(!featured)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${featured ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
+                                    }`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${featured ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
+                            </button>
                         </div>
                     </div>
 

@@ -10,8 +10,8 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                primary: "#6366f1", // Indigo-500 equivalent, vibrant purple/blue
-                "primary-hover": "#4f46e5",
+                primary: "#25aff4", // Maryfran Blue
+                "primary-hover": "#219eda",
                 "background-light": "#f3f4f6", // Gray-100
                 "background-dark": "#0f111a", // Deep dark blue/black
                 "surface-light": "#ffffff",
@@ -21,6 +21,7 @@ const config: Config = {
                 "accent-green": "#10b981",
                 "accent-purple": "#8b5cf6",
                 "accent-orange": "#f97316",
+                "accent": "#f97316", // Alias for easier use in design
                 "accent-red": "#ef4444",
             },
             fontFamily: {

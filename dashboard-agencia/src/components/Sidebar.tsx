@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Rocket, LayoutDashboard, Users, PieChart, Settings, Moon, Sun, LogOut, Package } from 'lucide-react'
+import { Rocket, LayoutDashboard, Users, PieChart, Settings, Moon, Sun, LogOut, Package, MessageSquare } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { supabase } from '@/lib/supabase'
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
     { label: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Leads & CRM', href: '/dashboard/leads', icon: Users },
     { label: 'Pacotes', href: '/dashboard/packages', icon: Package },
+    { label: 'WhatsApp AI', href: '/dashboard/whatsapp', icon: MessageSquare },
     { label: 'Analytics', href: '/dashboard/analytics', icon: PieChart },
     { label: 'Configurações', href: '/dashboard/settings', icon: Settings },
 ]
@@ -58,7 +59,7 @@ export default function Sidebar() {
                         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
                             <Rocket className="w-5 h-5" />
                         </div>
-                        <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Agência CRM</span>
+                        <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Maryfran Turismo</span>
                     </div>
                 </div>
 

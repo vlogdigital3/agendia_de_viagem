@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Package, Plus, Image as ImageIcon, Video, MoreHorizontal, Edit, Trash2 } from 'lucide-react'
+import { Package, Plus, Image as ImageIcon, Video, MoreHorizontal, Edit, Trash2, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import PackageModal from '@/components/PackageModal'
 
@@ -66,8 +66,16 @@ export default function PackagesPage() {
                                         <ImageIcon className="w-10 h-10 opacity-20" />
                                     </div>
                                 )}
-                                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white">
-                                    R$ {pkg.price}
+                                <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                                    <div className="bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white">
+                                        R$ {pkg.price}
+                                    </div>
+                                    {pkg.featured && (
+                                        <div className="bg-accent-orange text-white px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-lg flex items-center gap-1">
+                                            <Star className="w-3 h-3 fill-current" />
+                                            Destaque
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

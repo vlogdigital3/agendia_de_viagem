@@ -12,7 +12,7 @@ type Lead = {
     email?: string
     destination_interest: string
     status: string
-    ai_summary: string
+    ai_summary?: string | null
     created_at: string
 }
 
