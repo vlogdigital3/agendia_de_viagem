@@ -11,10 +11,11 @@ export default function PublicFooter() {
                     {/* Brand */}
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-3 text-[#0d171c] dark:text-white group">
-                            <div className="size-10 text-primary flex items-center justify-center bg-primary/10 rounded-xl transition-transform group-hover:scale-110">
-                                <Plane className="w-6 h-6" />
-                            </div>
-                            <span className="font-black text-xl tracking-tight">Maryfran Turismo</span>
+                            <img
+                                src="/logo.png"
+                                alt="Maryfran Turismo"
+                                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+                            />
                         </div>
                         <p className="text-base text-slate-500 dark:text-gray-400 leading-relaxed font-medium">
                             Transformando sonhos em destinos. Sua agência de confiança para as melhores experiências de viagem pelo Brasil e pelo mundo.

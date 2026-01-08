@@ -19,10 +19,11 @@ export default function PublicHeader() {
         <header className="sticky top-0 z-[100] w-full border-b border-[#e7eff4] dark:border-gray-800 bg-white/95 dark:bg-[#101c22]/95 backdrop-blur-md">
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-10 h-[72px] flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 group">
-                    <div className="size-10 text-primary flex items-center justify-center bg-primary/10 rounded-xl transition-transform group-hover:scale-110">
-                        <Plane className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-[#0d171c] dark:text-white text-xl font-black tracking-tight">Maryfran Turismo</h2>
+                    <img
+                        src="/logo.png"
+                        alt="Maryfran Turismo"
+                        className="h-[50px] w-auto object-contain transition-transform group-hover:scale-105"
+                    />
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-10">

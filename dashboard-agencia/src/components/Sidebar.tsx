@@ -56,10 +56,11 @@ export default function Sidebar() {
             <div>
                 <div className="h-16 flex items-center px-6 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                            <Rocket className="w-5 h-5" />
-                        </div>
-                        <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Maryfran Turismo</span>
+                        <img
+                            src="/logo.png"
+                            alt="Maryfran Turismo"
+                            className="h-8 w-auto object-contain"
+                        />
                     </div>
                 </div>
 

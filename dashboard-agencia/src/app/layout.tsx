@@ -8,6 +8,9 @@ const montserrat = Montserrat({ subsets: ["latin"], weight: ['400', '500', '600'
 export const metadata: Metadata = {
   title: "Maryfran Turismo - Painel de Controle",
   description: "Sistema de Gestão para Agência de Viagens",
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
