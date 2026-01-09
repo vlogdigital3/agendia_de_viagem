@@ -100,6 +100,10 @@ export default function PackagesPage() {
                                         <ImageIcon className="w-3 h-3" />
                                         {pkg.images?.length || 0}
                                     </div>
+                                    <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg text-gray-500 text-[10px] font-bold">
+                                        <Video className="w-3 h-3" />
+                                        {pkg.videos?.length || 0}
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">

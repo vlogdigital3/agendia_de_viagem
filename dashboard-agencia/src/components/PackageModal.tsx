@@ -176,9 +176,9 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
             if (error) throw error
             onSuccess()
             onClose()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving package:', error)
-            alert('Erro ao salvar pacote. Verifique os dados.')
+            alert(`Erro ao salvar pacote: ${error.message || 'Verifique os dados.'}`)
         } finally {
             setLoading(false)
         }
