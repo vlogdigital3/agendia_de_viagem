@@ -1,6 +1,6 @@
 'use client'
 
-export const runtime = 'edge'
+
 
 import { useState, useEffect } from 'react'
 import { Settings as SettingsIcon, Shield, User, Mail, Save } from 'lucide-react'
