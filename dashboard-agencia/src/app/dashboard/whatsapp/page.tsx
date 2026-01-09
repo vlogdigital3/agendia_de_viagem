@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge'
+
 import { useState, useEffect } from 'react'
 import { MessageSquare, Shield, HelpCircle, CheckCircle2, XCircle, QrCode, Phone, Users, History, Eye, Signal, LogOut, Plus, X, Settings, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'

@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge'
+
 import { useState, useEffect } from 'react'
 import { Package, Plus, Image as ImageIcon, Video, MoreHorizontal, Edit, Trash2, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'

@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge'
+
 import { useState, useEffect } from 'react'
 import LeadsTable from '@/components/LeadsTable'
 import CreateLeadModal from '@/components/CreateLeadModal'

@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge'
+
 import PublicHeader from '@/components/PublicHeader'
 import PublicFooter from '@/components/PublicFooter'
 import {

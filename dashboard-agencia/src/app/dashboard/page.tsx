@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge'
+
 import { useState, useEffect } from 'react'
 import KanbanBoard from '@/components/KanbanBoard'
 import StatsCards from '@/components/StatsCards'
