@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Image as ImageIcon, Video, Plus, Trash2, Save, Upload, Check } from 'lucide-react'
+import { X, Image as ImageIcon, Video, Plus, Trash2, Save, Upload, Check, MapPin, Calendar, Plane, Bus, CheckCircle2, ListOrdered, GripVertical } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 
@@ -14,6 +14,15 @@ type Package = {
     videos: string[]
     active: boolean
     featured: boolean
+    transport_type?: string
+    duration_days?: number
+    duration_nights?: number
+    destination_city?: string
+    destination_state?: string
+    inclusions?: string[]
+    exclusions?: string[]
+    itinerary?: { day: number; title: string; description: string }[]
+    category?: string
 }
 
 interface PackageModalProps {
@@ -32,6 +41,18 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
     const [isUploading, setIsUploading] = useState(false)
     const [loading, setLoading] = useState(false)
     const [featured, setFeatured] = useState(false)
+    const [transportType, setTransportType] = useState('Aéreo')
+    const [durationDays, setDurationDays] = useState('1')
+    const [durationNights, setDurationNights] = useState('0')
+    const [destinationCity, setDestinationCity] = useState('')
+    const [destinationState, setDestinationState] = useState('')
+    const [inclusions, setInclusions] = useState<string[]>([])
+    const [exclusions, setExclusions] = useState<string[]>([])
+    const [itinerary, setItinerary] = useState<{ day: number; title: string; description: string }[]>([])
+    const [category, setCategory] = useState('Geral')
+
+    const [newInclusion, setNewInclusion] = useState('')
+    const [newExclusion, setNewExclusion] = useState('')
 
     // Reset or populate form
     useEffect(() => {
@@ -43,6 +64,15 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                 setImages(item.images || [])
                 setVideos(item.videos || [])
                 setFeatured(item.featured || false)
+                setTransportType(item.transport_type || 'Aéreo')
+                setDurationDays(item.duration_days?.toString() || '1')
+                setDurationNights(item.duration_nights?.toString() || '0')
+                setDestinationCity(item.destination_city || '')
+                setDestinationState(item.destination_state || '')
+                setInclusions(item.inclusions || [])
+                setExclusions(item.exclusions || [])
+                setItinerary(item.itinerary || [])
+                setCategory(item.category || 'Geral')
             } else {
                 setTitle('')
                 setDescription('')
@@ -50,6 +80,15 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                 setImages([])
                 setVideos([])
                 setFeatured(false)
+                setTransportType('Aéreo')
+                setDurationDays('1')
+                setDurationNights('0')
+                setDestinationCity('')
+                setDestinationState('')
+                setInclusions([])
+                setExclusions([])
+                setItinerary([])
+                setCategory('Geral')
             }
         }
     }, [isOpen, item])
@@ -113,7 +152,16 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                 images,
                 videos,
                 active: true,
-                featured
+                featured,
+                transport_type: transportType,
+                duration_days: parseInt(durationDays) || 1,
+                duration_nights: parseInt(durationNights) || 0,
+                destination_city: destinationCity,
+                destination_state: destinationState,
+                inclusions,
+                exclusions,
+                itinerary,
+                category
             }
 
             let error;
@@ -134,6 +182,37 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleAddInclusion = () => {
+        if (newInclusion.trim()) {
+            setInclusions([...inclusions, newInclusion.trim()])
+            setNewInclusion('')
+        }
+    }
+
+    const handleAddExclusion = () => {
+        if (newExclusion.trim()) {
+            setExclusions([...exclusions, newExclusion.trim()])
+            setNewExclusion('')
+        }
+    }
+
+    const handleAddItineraryDay = () => {
+        const nextDay = itinerary.length + 1
+        setItinerary([...itinerary, { day: nextDay, title: '', description: '' }])
+    }
+
+    const handleUpdateItinerary = (index: number, field: 'title' | 'description', value: string) => {
+        const updated = [...itinerary]
+        updated[index] = { ...updated[index], [field]: value }
+        setItinerary(updated)
+    }
+
+    const handleRemoveItineraryDay = (index: number) => {
+        const updated = itinerary.filter((_, i) => i !== index)
+            .map((item, i) => ({ ...item, day: i + 1 }))
+        setItinerary(updated)
     }
 
     if (!isOpen) return null
@@ -157,20 +236,35 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-8">
                     {/* Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex flex-col gap-2 md:col-span-2">
                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Título do Pacote</label>
                             <input
                                 required
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Ex: Férias em Paris 7 Dias"
+                                placeholder="Ex: Jericoacoara - Aventura & Charme"
                                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white"
                             />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Preço (R$)</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white"
+                            >
+                                <option value="Geral">Geral</option>
+                                <option value="Aventura">Aventura</option>
+                                <option value="Luxo">Luxo</option>
+                                <option value="Passeio">Passeio</option>
+                                <option value="Internacional">Internacional</option>
+                                <option value="Nacional">Nacional</option>
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Preço por Pessoa (R$)</label>
                             <input
                                 required
                                 type="number"
@@ -180,20 +274,189 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white"
                             />
                         </div>
-                        <div className="flex flex-col gap-2 md:col-span-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Descrição Impactante (Para IA)</label>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Transporte</label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setTransportType('Aéreo')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border transition-all ${transportType === 'Aéreo' ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 dark:text-gray-400'}`}
+                                >
+                                    <Plane className="w-4 h-4" /> Aéreo
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTransportType('Rodoviário')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border transition-all ${transportType === 'Rodoviário' ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 dark:text-gray-400'}`}
+                                >
+                                    <Bus className="w-4 h-4" /> Rodoviário
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duração</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    value={durationDays}
+                                    onChange={(e) => setDurationDays(e.target.value)}
+                                    placeholder="Dias"
+                                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white text-center"
+                                />
+                                <span className="text-gray-400">/</span>
+                                <input
+                                    type="number"
+                                    value={durationNights}
+                                    onChange={(e) => setDurationNights(e.target.value)}
+                                    placeholder="Noites"
+                                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white text-center"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-primary" /> Destino (Cidade)
+                            </label>
+                            <input
+                                type="text"
+                                value={destinationCity}
+                                onChange={(e) => setDestinationCity(e.target.value)}
+                                placeholder="Ex: Jericoacoara"
+                                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white"
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2 md:col-span-3">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 text-primary">Descrição Geral (Chamada para IA)</label>
                             <textarea
                                 required
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                rows={4}
-                                placeholder="Descreva os detalhes, pontos turísticos e benefícios do pacote..."
+                                rows={3}
+                                placeholder="Destaque as principais atrações deste pacote..."
                                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white resize-none"
                             />
                         </div>
 
+                        {/* Inclusions & Exclusions */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:col-span-3">
+                            <div className="space-y-4">
+                                <label className="text-sm font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4" /> O que está INCLUSO
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newInclusion}
+                                        onChange={(e) => setNewInclusion(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddInclusion())}
+                                        placeholder="Add inclusão..."
+                                        className="flex-1 px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 outline-none dark:text-white"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddInclusion}
+                                        className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {inclusions.map((inc, i) => (
+                                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30">
+                                            <span className="text-sm text-green-700 dark:text-green-300">{inc}</span>
+                                            <button type="button" onClick={() => setInclusions(inclusions.filter((_, idx) => idx !== i))} className="text-green-400 hover:text-red-500">
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                    <X className="w-4 h-4" /> O que NÃO está incluso
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newExclusion}
+                                        onChange={(e) => setNewExclusion(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddExclusion())}
+                                        placeholder="Add exclusão..."
+                                        className="flex-1 px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 outline-none dark:text-white"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddExclusion}
+                                        className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {exclusions.map((exc, i) => (
+                                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30">
+                                            <span className="text-sm text-red-700 dark:text-red-300">{exc}</span>
+                                            <button type="button" onClick={() => setExclusions(exclusions.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-500">
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Itinerary */}
+                        <div className="md:col-span-3 space-y-4 pt-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <ListOrdered className="w-4 h-4 text-primary" /> Itinerário Detalhado
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={handleAddItineraryDay}
+                                    className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium hover:bg-primary/20 flex items-center gap-2 transition-all"
+                                >
+                                    <Plus className="w-3 h-3" /> Adicionar Dia
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {itinerary.map((day, idx) => (
+                                    <div key={idx} className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/30 relative">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white text-xs font-bold">
+                                                {day.day}
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={day.title}
+                                                onChange={(e) => handleUpdateItinerary(idx, 'title', e.target.value)}
+                                                placeholder="Título do Dia (Ex: Chegada em Jeri)"
+                                                className="flex-1 bg-transparent font-bold text-gray-900 dark:text-white outline-none border-b border-dashed border-gray-300 focus:border-primary px-1"
+                                            />
+                                            <button type="button" onClick={() => handleRemoveItineraryDay(idx)} className="text-gray-400 hover:text-red-500">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            value={day.description}
+                                            onChange={(e) => handleUpdateItinerary(idx, 'description', e.target.value)}
+                                            placeholder="O que vai acontecer neste dia?"
+                                            rows={2}
+                                            className="w-full bg-gray-50/50 dark:bg-gray-900/50 p-3 rounded-lg text-sm text-gray-600 dark:text-gray-400 outline-none border border-transparent focus:border-primary/30 resize-none"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Featured Toggle */}
-                        <div className="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/10 md:col-span-2">
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/10 md:col-span-3">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-primary/20 rounded-lg text-primary">
                                     <Check className="w-5 h-5" />

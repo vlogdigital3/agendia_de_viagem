@@ -11,7 +11,7 @@ import {
     Plane, MapPin, Calendar, Check, Play, Image as ImageIcon,
     ArrowLeft, Send, Star, Clock, Coffee, Languages,
     Hotel, CheckCircle2, XCircle, ChevronRight, Users,
-    Lock, ArrowRight, MessageCircle
+    Lock, ArrowRight, MessageCircle, Bus
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -129,11 +129,11 @@ export default function PackageDetailsPage() {
                                     <div className="mt-3 flex flex-wrap items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
                                         <span className="flex items-center gap-2">
                                             <MapPin className="text-primary w-4 h-4" />
-                                            Pernambuco, Brasil
+                                            {pkg.destination_city}{pkg.destination_state ? `, ${pkg.destination_state}` : ''}
                                         </span>
                                         <span className="flex items-center gap-2">
                                             <Clock className="text-primary w-4 h-4" />
-                                            7 Dias / 6 Noites
+                                            {pkg.duration_days} Dias / {pkg.duration_nights} Noites
                                         </span>
                                     </div>
                                 </div>
@@ -148,21 +148,19 @@ export default function PackageDetailsPage() {
 
                             {/* Chips */}
                             <div className="flex flex-wrap gap-3">
-                                <div className="flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-transparent hover:border-primary/20 transition-colors">
-                                    <Plane className="text-primary w-4 h-4" />
-                                    Aéreo Incluso
-                                </div>
+                                {pkg.transport_type && (
+                                    <div className="flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-transparent hover:border-primary/20 transition-colors">
+                                        {pkg.transport_type === 'Aéreo' ? <Plane className="text-primary w-4 h-4" /> : <Bus className="text-primary w-4 h-4" />}
+                                        {pkg.transport_type} Incluso
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-transparent hover:border-primary/20 transition-colors">
                                     <Hotel className="text-primary w-4 h-4" />
-                                    Hospedagem Premium
+                                    Hospedagem inclusa
                                 </div>
                                 <div className="flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-transparent hover:border-primary/20 transition-colors">
-                                    <Coffee className="text-primary w-4 h-4" />
-                                    Café da Manhã
-                                </div>
-                                <div className="flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-transparent hover:border-primary/20 transition-colors">
-                                    <Languages className="text-primary w-4 h-4" />
-                                    Guia Bilíngue
+                                    <Tag className="text-primary w-4 h-4" />
+                                    {pkg.category || 'Geral'}
                                 </div>
                             </div>
                         </div>
@@ -178,32 +176,21 @@ export default function PackageDetailsPage() {
                             </p>
                         </section>
 
-                        {/* Itinerary Timeline (Placeholder logic for design) */}
-                        <section className="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15232d] p-8 shadow-sm">
-                            <h2 className="mb-8 text-2xl font-bold text-slate-900 dark:text-white">Itinerário Detalhado</h2>
-                            <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 space-y-10 pl-8">
-                                <div className="relative group">
-                                    <span className="absolute -left-[41px] top-1.5 h-6 w-6 rounded-full border-[3px] border-white dark:border-[#15232d] bg-primary shadow-lg scale-110"></span>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Dia 1: Chegada e Recepção</h3>
-                                    <p className="mt-2 text-slate-600 dark:text-slate-400">Recepção privativa no aeroporto e transfer VIP para sua hospedagem. À tarde, reunião de boas-vindas e introdução ao roteiro.</p>
+                        {/* Itinerary Timeline */}
+                        {pkg.itinerary && pkg.itinerary.length > 0 && (
+                            <section className="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15232d] p-8 shadow-sm">
+                                <h2 className="mb-8 text-2xl font-bold text-slate-900 dark:text-white">Itinerário Detalhado</h2>
+                                <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-4 space-y-10 pl-8">
+                                    {pkg.itinerary.map((day: any, idx: number) => (
+                                        <div key={idx} className="relative group">
+                                            <span className={`absolute -left-[41px] top-1.5 h-6 w-6 rounded-full border-[3px] border-white dark:border-[#15232d] shadow-lg scale-110 ${idx === 0 ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-all'}`}></span>
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Dia {day.day}: {day.title}</h3>
+                                            <p className="mt-2 text-slate-600 dark:text-slate-400">{day.description}</p>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="relative group">
-                                    <span className="absolute -left-[41px] top-1.5 h-6 w-6 rounded-full border-[3px] border-white dark:border-[#15232d] bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-all group-hover:scale-110"></span>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Dia 2: Explorando o Paraíso</h3>
-                                    <p className="mt-2 text-slate-600 dark:text-slate-400">Passeio panorâmico pelos principais pontos turísticos, com paradas estratégicas para fotos e banhos de mar inesquecíveis.</p>
-                                </div>
-                                <div className="relative group">
-                                    <span className="absolute -left-[41px] top-1.5 h-6 w-6 rounded-full border-[3px] border-white dark:border-[#15232d] bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-all group-hover:scale-110"></span>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Dias 3-6: Atividades e Lazer</h3>
-                                    <p className="mt-2 text-slate-600 dark:text-slate-400">Dias dedicados à atividades exclusivas, trilhas guiadas e momentos de relaxamento total nas melhores áreas do destino.</p>
-                                </div>
-                                <div className="relative group">
-                                    <span className="absolute -left-[41px] top-1.5 h-6 w-6 rounded-full border-[3px] border-white dark:border-[#15232d] bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-all group-hover:scale-110"></span>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Dia 7: Retorno</h3>
-                                    <p className="mt-2 text-slate-600 dark:text-slate-400">Café da manhã especial de despedida, tempo livre para últimas recordações e transfer exclusivo para o aeroporto.</p>
-                                </div>
-                            </div>
-                        </section>
+                            </section>
+                        )}
 
                         {/* Inclusions / Exclusions */}
                         <section className="space-y-6">
@@ -215,11 +202,19 @@ export default function PackageDetailsPage() {
                                         Incluso no Pacote
                                     </h4>
                                     <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                                        <li className="flex gap-2">Passagens aéreas ida e volta</li>
-                                        <li className="flex gap-2">Hospedagem em hotel selecionado</li>
-                                        <li className="flex gap-2">Translados privativos</li>
-                                        <li className="flex gap-2">Seguro viagem completo</li>
-                                        <li className="flex gap-2">Guias locais certificados</li>
+                                        {pkg.inclusions && pkg.inclusions.length > 0 ? (
+                                            pkg.inclusions.map((item: string, i: number) => (
+                                                <li key={i} className="flex gap-2 items-center">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                                    {item}
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <li className="flex gap-2">Hospedagem inclusa</li>
+                                                <li className="flex gap-2">Assistência 24h</li>
+                                            </>
+                                        )}
                                     </ul>
                                 </div>
                                 <div className="space-y-4 rounded-3xl bg-red-50 dark:bg-red-900/10 p-6 border border-red-100 dark:border-red-900/20">
@@ -228,10 +223,19 @@ export default function PackageDetailsPage() {
                                         Não Incluso
                                     </h4>
                                     <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                                        <li className="flex gap-2">Almoços e jantares extras</li>
-                                        <li className="flex gap-2">Taxas governamentais locais</li>
-                                        <li className="flex gap-2">Bebidas e despesas pessoais</li>
-                                        <li className="flex gap-2">Passeios opcionais não citados</li>
+                                        {pkg.exclusions && pkg.exclusions.length > 0 ? (
+                                            pkg.exclusions.map((item: string, i: number) => (
+                                                <li key={i} className="flex gap-2 items-center">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                                    {item}
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <li className="flex gap-2">Almoços e jantares</li>
+                                                <li className="flex gap-2">Despesas pessoais</li>
+                                            </>
+                                        )}
                                     </ul>
                                 </div>
                             </div>

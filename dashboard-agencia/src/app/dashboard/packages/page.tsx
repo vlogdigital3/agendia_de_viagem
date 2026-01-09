@@ -3,7 +3,7 @@
 export const runtime = 'edge'
 
 import { useState, useEffect } from 'react'
-import { Package, Plus, Image as ImageIcon, Video, MoreHorizontal, Edit, Trash2, Star } from 'lucide-react'
+import { Package, Plus, Image as ImageIcon, Video, MoreHorizontal, Edit, Trash2, Star, Plane, Bus, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import PackageModal from '@/components/PackageModal'
 
@@ -87,14 +87,18 @@ export default function PackagesPage() {
                                     {pkg.description}
                                 </p>
 
-                                <div className="flex items-center gap-4 text-xs font-medium text-gray-600 dark:text-gray-400 mb-6">
-                                    <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg text-blue-600 dark:text-blue-400">
-                                        <ImageIcon className="w-3.5 h-3.5" />
-                                        {pkg.images?.length || 0} Fotos
+                                <div className="flex flex-wrap items-center gap-2 mb-6">
+                                    <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg text-blue-600 dark:text-blue-400 text-[10px] font-bold">
+                                        {pkg.transport_type === 'Rodoviário' ? <Bus className="w-3 h-3" /> : <Plane className="w-3 h-3" />}
+                                        {pkg.transport_type || 'Aéreo'}
                                     </div>
-                                    <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg text-red-600 dark:text-red-400">
-                                        <Video className="w-3.5 h-3.5" />
-                                        {pkg.videos?.length || 0} Vídeos
+                                    <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                                        <Clock className="w-3 h-3" />
+                                        {pkg.duration_days}D/{pkg.duration_nights}N
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg text-gray-500 text-[10px] font-bold">
+                                        <ImageIcon className="w-3 h-3" />
+                                        {pkg.images?.length || 0}
                                     </div>
                                 </div>
 
