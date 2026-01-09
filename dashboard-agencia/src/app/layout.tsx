@@ -8,12 +8,6 @@ const montserrat = Montserrat({ subsets: ["latin"], weight: ['400', '500', '600'
 export const metadata: Metadata = {
   title: "Maryfran Turismo | Agência de Viagens de Elite",
   description: "As melhores experiências de viagens e consultoria exclusiva Maryfran Turismo.",
-  metadataBase: new URL('https://agendia-de-viagem.pages.dev'),
-  icons: {
-    icon: '/logo.png',
-    shortcut: '/favicon.png',
-    apple: '/logo.png',
-  },
   openGraph: {
     title: "Maryfran Turismo | Agência de Viagens",
     description: "As melhores experiências de viagens e pacotes exclusivos para você.",
@@ -30,6 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className={`${montserrat.className} bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200 antialiased transition-colors duration-300`} suppressHydrationWarning>
         {children}
         <ChatWidget />
