@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Image as ImageIcon, Video, Plus, Trash2, Save, Upload, Check, MapPin, Calendar, Plane, Bus, CheckCircle2, ListOrdered, GripVertical } from 'lucide-react'
+import { X, Image as ImageIcon, Video, Plus, Trash2, Save, Upload, Check, MapPin, Calendar, Plane, Bus, CheckCircle2, ListOrdered, GripVertical, Maximize2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 
@@ -53,6 +53,7 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
 
     const [newInclusion, setNewInclusion] = useState('')
     const [newExclusion, setNewExclusion] = useState('')
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
     // Reset or populate form
     useEffect(() => {
@@ -330,7 +331,17 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                         </div>
 
                         <div className="flex flex-col gap-2 md:col-span-3">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 text-primary">Descrição Geral (Chamada para IA)</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 text-primary">Descrição Geral (Chamada para IA)</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDescriptionExpanded(true)}
+                                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors flex items-center gap-1.5 text-xs"
+                                >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                    Expandir
+                                </button>
+                            </div>
                             <textarea
                                 required
                                 value={description}
@@ -601,6 +612,50 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
                     </div>
                 </form>
             </motion.div>
+            {/* Description Expansion Modal */}
+            <AnimatePresence>
+                {isDescriptionExpanded && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-white dark:bg-surface-dark rounded-3xl w-full max-w-5xl shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden h-[80vh]"
+                        >
+                            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Editar Descrição Geral</h3>
+                                    <p className="text-xs text-gray-500 mt-1">Destaque detalhes importantes para que a IA possa responder com precisão.</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsDescriptionExpanded(false)}
+                                    className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-primary transition-all"
+                                >
+                                    <Save className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="flex-1 p-6 overflow-hidden">
+                                <textarea
+                                    autoFocus
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    placeholder="Escreva aqui a descrição detalhada do pacote..."
+                                    className="w-full h-full p-6 text-lg rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white resize-none font-medium leading-relaxed"
+                                />
+                            </div>
+                            <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                                <button
+                                    onClick={() => setIsDescriptionExpanded(false)}
+                                    className="px-8 py-3 rounded-2xl bg-primary hover:bg-primary-hover text-white font-bold shadow-xl shadow-primary/30 transition-all flex items-center gap-2"
+                                >
+                                    Concluir Edição
+                                    <Check className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
