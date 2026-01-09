@@ -11,11 +11,13 @@ const CHAT_API_URL = 'https://mjpwylpoedzikgbzcncr.supabase.co/functions/v1/chat
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false)
     const [message, setMessage] = useState('')
-    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
-        { role: 'assistant', content: 'Olá! Eu sou a Sofia, sua consultora virtual da Maryfran Turismo. Como posso ajudar com sua próxima viagem hoje? ✈️✨' }
+    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string, packages?: any[] }[]>([
+        { role: 'assistant', content: 'Olá! Sou a Sofia, consultora de elite da Maryfran Turismo. ✈️✨ É um prazer conversar com você! Como posso tornar sua próxima viagem inesquecível hoje?' }
     ])
     const [isLoading, setIsLoading] = useState(false)
+    const [isCollectingLead, setIsCollectingLead] = useState(false)
     const [sessionId, setSessionId] = useState('')
+    const [leadData, setLeadData] = useState({ name: '', phone: '', email: '' })
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -51,13 +53,27 @@ export default function ChatWidget() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [...messages, userMessage],
-                    sessionId: sessionId
+                    sessionId: sessionId,
+                    user_name: leadData.name || 'Visitante',
+                    platform: 'web'
                 })
             })
 
             const data = await response.json()
+
             if (data.content) {
-                setMessages(prev => [...prev, { role: 'assistant', content: data.content }])
+                // Check for human handover marker
+                if (data.content.includes("AUTO_NOTIFY_HUMAN_MARKER")) {
+                    setIsCollectingLead(true)
+                    const cleanContent = data.content.split('---').pop()?.trim() || "Pronto! Para que um de nossos especialistas assuma seu atendimento com exclusividade, por favor, me informe seus dados básicos:"
+                    setMessages(prev => [...prev, { role: 'assistant', content: cleanContent }])
+                } else {
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: data.content,
+                        packages: data.packages
+                    }])
+                }
             } else {
                 setMessages(prev => [...prev, { role: 'assistant', content: 'Desculpe, tive um probleminha técnico. Pode tentar novamente? 😅' }])
             }
@@ -67,6 +83,18 @@ export default function ChatWidget() {
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleLeadSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsCollectingLead(false)
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `Obrigada, ${leadData.name}! Seus dados foram enviados. Um de nossos consultores entrará em contato em breve pelo WhatsApp ${leadData.phone}. Até logo! ✨`
+        }])
+
+        // Here you would normally send this to a lead collection endpoint
+        console.log("New Lead Collected:", leadData)
     }
 
     return (
@@ -120,6 +148,30 @@ export default function ChatWidget() {
                                             : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-tl-none'
                                             }`}>
                                             {msg.content}
+
+                                            {msg.packages && msg.packages.length > 0 && (
+                                                <div className="mt-4 space-y-4">
+                                                    {msg.packages.map((pkg: any, pidx) => (
+                                                        <motion.div
+                                                            key={pidx}
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            className="bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
+                                                        >
+                                                            {pkg.images?.[0] && (
+                                                                <img src={pkg.images[0]} alt={pkg.title} className="w-full h-32 object-cover" />
+                                                            )}
+                                                            <div className="p-3">
+                                                                <h4 className="font-bold text-gray-900 dark:text-white mb-1">{pkg.title}</h4>
+                                                                <p className="text-xs text-gray-500 line-clamp-2 mb-2">{pkg.description}</p>
+                                                                <button className="w-full py-2 bg-primary text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all">
+                                                                    Explorar Destino
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>
@@ -139,25 +191,61 @@ export default function ChatWidget() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input Area */}
-                        <form onSubmit={handleSend} className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-surface-dark">
-                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-2xl p-2 px-4 focus-within:ring-2 focus-within:ring-primary transition-all">
-                                <input
-                                    type="text"
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    placeholder="Digite sua mensagem..."
-                                    className="flex-1 bg-transparent border-none outline-none text-sm py-2 dark:text-white"
-                                />
+                        {/* Input Area / Lead Form */}
+                        {isCollectingLead ? (
+                            <form onSubmit={handleLeadSubmit} className="p-6 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-surface-dark space-y-4">
+                                <div className="space-y-3">
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="Seu nome completo"
+                                        value={leadData.name}
+                                        onChange={(e) => setLeadData(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary transition-all dark:text-white"
+                                    />
+                                    <input
+                                        required
+                                        type="tel"
+                                        placeholder="WhatsApp (com DDD)"
+                                        value={leadData.phone}
+                                        onChange={(e) => setLeadData(prev => ({ ...prev, phone: e.target.value }))}
+                                        className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary transition-all dark:text-white"
+                                    />
+                                    <input
+                                        type="email"
+                                        placeholder="E-mail (opcional)"
+                                        value={leadData.email}
+                                        onChange={(e) => setLeadData(prev => ({ ...prev, email: e.target.value }))}
+                                        className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary transition-all dark:text-white"
+                                    />
+                                </div>
                                 <button
                                     type="submit"
-                                    disabled={!message.trim() || isLoading}
-                                    className="p-2 bg-primary text-white rounded-xl disabled:opacity-50 disabled:grayscale transition-all hover:scale-110 active:scale-95"
+                                    className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:shadow-primary/20 transition-all active:scale-95"
                                 >
-                                    <Send className="w-4 h-4" />
+                                    Falar com Especialista
                                 </button>
-                            </div>
-                        </form>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleSend} className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-surface-dark">
+                                <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-2xl p-2 px-4 focus-within:ring-2 focus-within:ring-primary transition-all">
+                                    <input
+                                        type="text"
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        placeholder="Digite sua mensagem..."
+                                        className="flex-1 bg-transparent border-none outline-none text-sm py-2 dark:text-white"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!message.trim() || isLoading}
+                                        className="p-2 bg-primary text-white rounded-xl disabled:opacity-50 disabled:grayscale transition-all hover:scale-110 active:scale-95"
+                                    >
+                                        <Send className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
