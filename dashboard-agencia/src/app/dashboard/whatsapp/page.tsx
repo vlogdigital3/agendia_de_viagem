@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react'
 import { MessageSquare, Shield, HelpCircle, CheckCircle2, XCircle, QrCode, Phone, Users, History, Eye, Signal, LogOut, Plus, X, Settings, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
+const EVO_CONFIG = {
+    url: 'https://api.vlogia.com.br',
+    apikey: 'b6ff2fcd3acabca05a948b13e08bad86',
+    instance: 'maryfran-ai'
+}
+
 export default function WhatsAppPage() {
     const [configs, setConfigs] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -34,21 +40,26 @@ export default function WhatsAppPage() {
 
     const checkStatus = async (instanceName: string) => {
         try {
-            const resp = await fetch(`https://api.vlogia.com.br/instance/connectionState/${instanceName}`, {
-                headers: { 'apikey': 'b6ff2fcd3acabca05a948b13e08bad86' }
+            const resp = await fetch(`${EVO_CONFIG.url}/instance/connectionState/${instanceName}`, {
+                headers: { 'apikey': EVO_CONFIG.apikey }
             })
-            const data = await resp.json()
-            const state = data.instance?.state
 
-            if (state === 'open') {
+            if (!resp.ok) {
+                if (resp.status === 404) setStatus('disconnected')
+                return
+            }
+
+            const data = await resp.json()
+            const state = data.instance?.state || data.state || (data.status === 'open' ? 'open' : null)
+
+            if (state === 'open' || state === 'CONNECTED') {
                 setStatus('connected')
                 setQrCode(null)
-            } else if (state === 'connecting') {
+            } else if (state === 'connecting' || state === 'CONNECTING') {
                 setStatus('connecting')
-                // If it's connecting but we don't have a QR code, try to get it
                 if (!qrCode) {
-                    const qrResp = await fetch(`https://api.vlogia.com.br/instance/connect/${instanceName}`, {
-                        headers: { 'apikey': 'b6ff2fcd3acabca05a948b13e08bad86' }
+                    const qrResp = await fetch(`${EVO_CONFIG.url}/instance/connect/${instanceName}`, {
+                        headers: { 'apikey': EVO_CONFIG.apikey }
                     })
                     const qrData = await qrResp.json()
                     if (qrData.base64) setQrCode(qrData.base64)
@@ -56,8 +67,13 @@ export default function WhatsAppPage() {
             } else {
                 setStatus('disconnected')
             }
-        } catch (e) {
-            console.error("Error checking status", e)
+        } catch (e: any) {
+            // Silence "Failed to fetch" to avoid Next.js error overlay in dev
+            if (e.message === 'Failed to fetch') {
+                console.warn("WhatsApp API unreachable (CORS or Network issue)")
+            } else {
+                console.error("Error checking WhatsApp status:", e)
+            }
         }
     }
 
@@ -65,15 +81,15 @@ export default function WhatsAppPage() {
         setStatus('connecting')
         try {
             // First ensure instance exists (create if needed)
-            const createResp = await fetch(`https://api.vlogia.com.br/instance/create`, {
+            const createResp = await fetch(`${EVO_CONFIG.url}/instance/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': 'b6ff2fcd3acabca05a948b13e08bad86'
+                    'apikey': EVO_CONFIG.apikey
                 },
                 body: JSON.stringify({
-                    instanceName: 'maryfran-ai',
-                    token: 'b6ff2fcd3acabca05a948b13e08bad86',
+                    instanceName: EVO_CONFIG.instance,
+                    token: EVO_CONFIG.apikey,
                     qrcode: true,
                     integration: 'WHATSAPP-BAILEYS'
                 })
@@ -82,19 +98,19 @@ export default function WhatsAppPage() {
             // Wait a bit for instance to stabilize
             await new Promise(r => setTimeout(r, 1000))
 
-            const resp = await fetch(`https://api.vlogia.com.br/instance/connect/maryfran-ai`, {
-                headers: { 'apikey': 'b6ff2fcd3acabca05a948b13e08bad86' }
+            const resp = await fetch(`${EVO_CONFIG.url}/instance/connect/${EVO_CONFIG.instance}`, {
+                headers: { 'apikey': EVO_CONFIG.apikey }
             })
             const data = await resp.json()
             if (data.base64) {
                 setQrCode(data.base64)
             } else {
                 // If create failed or already exists, try to get connection state
-                await checkStatus('maryfran-ai')
+                await checkStatus(EVO_CONFIG.instance)
             }
-        } catch (e) {
-            console.error("Error generating QR", e)
-            alert("Erro ao conectar com a API. Verifique se a Evolution API está online.")
+        } catch (e: any) {
+            console.warn("Error generating QR:", e.message)
+            alert("Erro ao conectar com a API. Verifique sua conexão ou se há um bloqueador de anúncios ativo.")
             setStatus('disconnected')
         }
     }
@@ -132,9 +148,9 @@ export default function WhatsAppPage() {
     const handleLogout = async () => {
         if (!confirm('Deseja realmente desconectar o WhatsApp?')) return
         try {
-            await fetch(`https://api.vlogia.com.br/instance/logout/maryfran-ai`, {
+            await fetch(`${EVO_CONFIG.url}/instance/logout/${EVO_CONFIG.instance}`, {
                 method: 'DELETE',
-                headers: { 'apikey': 'b6ff2fcd3acabca05a948b13e08bad86' }
+                headers: { 'apikey': EVO_CONFIG.apikey }
             })
             setStatus('disconnected')
             setQrCode(null)
@@ -144,32 +160,57 @@ export default function WhatsAppPage() {
     }
 
     const fetchConfigs = async () => {
-        setLoading(true)
-        const { data } = await supabase.from('whatsapp_configs').select('*').limit(1).maybeSingle()
+        try {
+            setLoading(true)
+            const { data, error: fetchError } = await supabase.from('whatsapp_configs').select('*').limit(1).maybeSingle()
 
-        const targetUrl = 'https://api.vlogia.com.br'
-        const targetKey = 'b6ff2fcd3acabca05a948b13e08bad86'
-        const targetInstance = 'maryfran-ai'
-
-        if (data) {
-            setConfigs(data)
-            // Ensure DB matches hardcoded target config
-            if (data.evolution_url !== targetUrl || data.evolution_apikey !== targetKey || data.instance_name !== targetInstance) {
-                const { data: updated } = await supabase.from('whatsapp_configs').update({
-                    evolution_url: targetUrl,
-                    evolution_apikey: targetKey,
-                    instance_name: targetInstance
-                }).eq('id', data.id).select().single()
-                if (updated) setConfigs(updated)
+            if (fetchError) {
+                console.error("Supabase fetch error:", fetchError)
+                // If it's a real error (not just no rows), we might want to handle it
             }
-            await checkStatus(targetInstance)
-        } else {
-            const { data: newData } = await supabase.from('whatsapp_configs').insert([
-                { instance_name: targetInstance, evolution_url: targetUrl, evolution_apikey: targetKey }
-            ]).select().single()
-            if (newData) setConfigs(newData)
+
+            const targetUrl = 'https://api.vlogia.com.br'
+            const targetKey = 'b6ff2fcd3acabca05a948b13e08bad86'
+            const targetInstance = 'maryfran-ai'
+
+            if (data) {
+                setConfigs(data)
+                // Ensure DB matches hardcoded target config
+                if (data.evolution_url !== EVO_CONFIG.url || data.evolution_apikey !== EVO_CONFIG.apikey || data.instance_name !== EVO_CONFIG.instance) {
+                    const { data: updated } = await supabase.from('whatsapp_configs').update({
+                        evolution_url: EVO_CONFIG.url,
+                        evolution_apikey: EVO_CONFIG.apikey,
+                        instance_name: EVO_CONFIG.instance
+                    }).eq('id', data.id).select().single()
+                    if (updated) setConfigs(updated)
+                }
+                await checkStatus(EVO_CONFIG.instance)
+            } else {
+                // If no data, try to create it, but catch errors
+                try {
+                    const { data: newData, error: insertError } = await supabase.from('whatsapp_configs').insert([
+                        { instance_name: EVO_CONFIG.instance, evolution_url: EVO_CONFIG.url, evolution_apikey: EVO_CONFIG.apikey }
+                    ]).select().single()
+
+                    if (insertError) throw insertError
+                    if (newData) setConfigs(newData)
+                } catch (e) {
+                    console.error("Failed to create default configs", e)
+                    // Set a local dummy config so we don't stay in loading state if DB is unreachable
+                    setConfigs({
+                        instance_name: targetInstance,
+                        evolution_url: targetUrl,
+                        evolution_apikey: targetKey,
+                        behavior: { ignore_groups: true },
+                        whitelist: []
+                    })
+                }
+            }
+        } catch (e) {
+            console.error("Critical error in fetchConfigs", e)
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const updateBehavior = async (key: string, value: boolean) => {
@@ -183,36 +224,85 @@ export default function WhatsAppPage() {
             read_messages: false
         }
         const newBehavior = { ...currentBehavior, [key]: value }
-        const { error } = await supabase.from('whatsapp_configs').update({ behavior: newBehavior }).eq('id', configs.id)
-        if (!error) setConfigs({ ...configs, behavior: newBehavior })
+
+        try {
+            if (!configs.id) {
+                // Creation logic if no ID
+                const { data } = await supabase.from('whatsapp_configs').upsert({
+                    instance_name: 'maryfran-ai',
+                    evolution_url: 'https://api.vlogia.com.br',
+                    evolution_apikey: 'b6ff2fcd3acabca05a948b13e08bad86',
+                    behavior: newBehavior
+                }, { onConflict: 'instance_name' }).select().single()
+                if (data) setConfigs(data)
+            } else {
+                const { error } = await supabase.from('whatsapp_configs').update({ behavior: newBehavior }).eq('id', configs.id)
+                if (!error) setConfigs({ ...configs, behavior: newBehavior })
+            }
+        } catch (e) {
+            console.error("Error updating behavior:", e)
+        }
     }
 
     const addToWhitelist = async () => {
+        console.log("addToWhitelist called with:", whitelistNum)
         if (!whitelistNum || !configs) return
+
         const newWhitelist = [...(configs.whitelist || []), whitelistNum]
-        const { error } = await supabase.from('whatsapp_configs').update({ whitelist: newWhitelist }).eq('id', configs.id)
-        if (!error) {
-            setConfigs({ ...configs, whitelist: newWhitelist })
-            setWhitelistNum('')
+
+        try {
+            if (!configs.id) {
+                const { data } = await supabase.from('whatsapp_configs').upsert({
+                    instance_name: 'maryfran-ai',
+                    evolution_url: 'https://api.vlogia.com.br',
+                    evolution_apikey: 'b6ff2fcd3acabca05a948b13e08bad86',
+                    whitelist: newWhitelist
+                }, { onConflict: 'instance_name' }).select().single()
+                if (data) setConfigs(data)
+            } else {
+                const { error } = await supabase.from('whatsapp_configs').update({ whitelist: newWhitelist }).eq('id', configs.id)
+                if (!error) {
+                    setConfigs({ ...configs, whitelist: newWhitelist })
+                    setWhitelistNum('')
+                } else {
+                    alert("Erro ao salvar: " + error.message)
+                }
+            }
+        } catch (e) {
+            console.error("Error in addToWhitelist:", e)
         }
     }
 
     const removeFromWhitelist = async (num: string) => {
+        console.log("removeFromWhitelist called for:", num)
         if (!configs || !configs.whitelist) return
+
         const newWhitelist = configs.whitelist.filter((n: string) => n !== num)
-        const { error } = await supabase.from('whatsapp_configs').update({ whitelist: newWhitelist }).eq('id', configs.id)
-        if (!error) setConfigs({ ...configs, whitelist: newWhitelist })
+        console.log("New whitelist after removal:", newWhitelist)
+
+        try {
+            const { error } = await supabase.from('whatsapp_configs').update({ whitelist: newWhitelist }).eq('id', configs.id)
+            if (error) {
+                console.error("Supabase update error (remove whitelist):", error)
+            } else {
+                setConfigs({ ...configs, whitelist: newWhitelist })
+            }
+        } catch (e) {
+            console.error("Unexpected error in removeFromWhitelist:", e)
+        }
     }
 
     useEffect(() => {
         fetchConfigs()
+    }, [])
+
+    useEffect(() => {
         const interval = setInterval(() => {
-            if (status !== 'connected') {
-                checkStatus('maryfran-ai')
-            }
-        }, 10000)
+            // Poll more frequently if not connected or connecting
+            checkStatus('maryfran-ai')
+        }, status === 'connected' ? 15000 : 5000)
         return () => clearInterval(interval)
-    }, [status])
+    }, [status, qrCode])
 
     if (loading || !configs) return (
         <div className="flex items-center justify-center h-full">
