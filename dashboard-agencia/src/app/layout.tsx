@@ -6,12 +6,17 @@ import ChatWidget from "@/components/ChatWidget";
 const montserrat = Montserrat({ subsets: ["latin"], weight: ['400', '500', '600', '700', '800'] });
 
 export const metadata: Metadata = {
-  title: "Sua Agência de Viagens",
-  description: "Aqui você encontra as melhores opções de pacotes de viagens para você e sua família.",
+  title: "Maryfran Turismo | Agência de Viagens de Elite",
+  description: "As melhores experiências de viagens e consultoria exclusiva Maryfran Turismo.",
   metadataBase: new URL('https://agendia-de-viagem.pages.dev'),
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/favicon.png',
+    apple: '/logo.png',
+  },
   openGraph: {
-    title: "Sua Agência de Viagens",
-    description: "Aqui você encontra as melhores opções de pacotes de viagens para você e sua família.",
+    title: "Maryfran Turismo | Agência de Viagens",
+    description: "As melhores experiências de viagens e pacotes exclusivos para você.",
     siteName: 'Maryfran Turismo',
     locale: 'pt_BR',
     type: 'website',
