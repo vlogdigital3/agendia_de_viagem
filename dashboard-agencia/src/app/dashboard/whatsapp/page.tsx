@@ -19,24 +19,76 @@ export default function WhatsAppPage() {
     const [whitelistNum, setWhitelistNum] = useState('')
     const [blacklistNum, setBlacklistNum] = useState('')
     const [qrCode, setQrCode] = useState<string | null>(null)
+    const [isSyncing, setIsSyncing] = useState(false)
+    const [webhookStatus, setWebhookStatus] = useState<'checking' | 'active' | 'inactive'>('checking')
 
     const setupWebhook = async (instanceName: string) => {
         try {
-            await fetch(`https://api.vlogia.com.br/webhook/set/${instanceName}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': 'b6ff2fcd3acabca05a948b13e08bad86'
-                },
-                body: JSON.stringify({
-                    url: "https://mjpwylpoedzikgbzcncr.supabase.co/functions/v1/whatsapp-agent",
-                    enabled: true,
-                    events: ["MESSAGES_UPSERT"]
+            console.log(`Configuring webhook for ${instanceName}...`)
+
+            // Try different possible endpoints for Evolution API versions
+            const endpoints = [
+                `${EVO_CONFIG.url}/webhook/set/${instanceName}`,
+                `${EVO_CONFIG.url}/webhook/instance/${instanceName}`,
+                `${EVO_CONFIG.url}/webhook/update/${instanceName}`
+            ]
+
+            let success = false
+            for (const endpoint of endpoints) {
+                console.log(`Trying endpoint: ${endpoint}`)
+                const resp = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': EVO_CONFIG.apikey
+                    },
+                    body: JSON.stringify({
+                        webhook: {
+                            url: "https://mjpwylpoedzikgbzcncr.supabase.co/functions/v1/whatsapp-agent",
+                            enabled: true,
+                            events: ["MESSAGES_UPSERT"]
+                        }
+                    })
                 })
-            })
-            console.log("Webhook configured successfully")
+
+                if (resp.ok) {
+                    success = true
+                    break
+                } else {
+                    const errData = await resp.json().catch(() => ({}))
+                    console.warn(`Failed endpoint ${endpoint}:`, errData)
+                }
+            }
+
+            if (success) {
+                console.log("Webhook configured successfully")
+                setWebhookStatus('active')
+                return true
+            } else {
+                setWebhookStatus('inactive')
+                return false
+            }
         } catch (e) {
             console.error("Error setting up webhook", e)
+            setWebhookStatus('inactive')
+            return false
+        }
+    }
+
+    const checkWebhookStatus = async (instanceName: string) => {
+        try {
+            const resp = await fetch(`${EVO_CONFIG.url}/webhook/find/${instanceName}`, {
+                headers: { 'apikey': EVO_CONFIG.apikey }
+            })
+            if (resp.ok) {
+                const data = await resp.json()
+                const isConfigured = data.find((w: any) => w.url.includes('supabase.co'))
+                setWebhookStatus(isConfigured ? 'active' : 'inactive')
+            } else {
+                setWebhookStatus('inactive')
+            }
+        } catch (e) {
+            setWebhookStatus('inactive')
         }
     }
 
@@ -114,6 +166,29 @@ export default function WhatsAppPage() {
             console.warn("Error generating QR:", e.message)
             alert("Erro ao conectar com a API. Verifique sua conexão ou se há um bloqueador de anúncios ativo.")
             setStatus('disconnected')
+        }
+    }
+
+    const handleSyncRepair = async () => {
+        setIsSyncing(true)
+        try {
+            console.log("Starting Sync & Repair...")
+            // 1. Force Webhook Setup
+            const webhookOk = await setupWebhook(EVO_CONFIG.instance)
+
+            // 2. Re-check Connection Status
+            await checkStatus(EVO_CONFIG.instance)
+
+            if (webhookOk) {
+                alert('Sincronização concluída com sucesso! O Webhook e o Status foram atualizados.')
+            } else {
+                alert('Conexão verificada, mas houve um problema ao configurar o Webhook. Tente novamente.')
+            }
+        } catch (e: any) {
+            console.error("Sync error:", e)
+            alert('Erro ao sincronizar: ' + e.message)
+        } finally {
+            setIsSyncing(false)
         }
     }
 
@@ -301,10 +376,20 @@ export default function WhatsAppPage() {
     useEffect(() => {
         const interval = setInterval(() => {
             // Poll more frequently if not connected or connecting
-            checkStatus('maryfran-ai')
+            checkStatus(EVO_CONFIG.instance)
+            if (status === 'connected' && webhookStatus !== 'active') {
+                checkWebhookStatus(EVO_CONFIG.instance)
+            }
         }, status === 'connected' ? 15000 : 5000)
         return () => clearInterval(interval)
-    }, [status, qrCode])
+    }, [status, qrCode, webhookStatus])
+
+    // Auto-sync webhook when connected
+    useEffect(() => {
+        if (status === 'connected' && webhookStatus === 'inactive') {
+            setupWebhook(EVO_CONFIG.instance)
+        }
+    }, [status])
 
     if (loading || !configs) return (
         <div className="flex items-center justify-center h-full">
@@ -333,10 +418,16 @@ export default function WhatsAppPage() {
                                 <QrCode className="w-5 h-5 text-primary" />
                                 <h2 className="font-bold text-gray-900 dark:text-white">Status da Conexão</h2>
                             </div>
-                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${status === 'connected' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                                }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${status === 'connected' ? 'bg-green-600' : 'bg-red-600'} animate-pulse`}></span>
-                                {status === 'connected' ? 'Conectado' : 'Desconectado'}
+                            <div className="flex items-center gap-4">
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${webhookStatus === 'active' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'}`}>
+                                    <Signal className="w-3 h-3" />
+                                    AI Webhook: {webhookStatus === 'active' ? 'Ativo' : 'Pendente'}
+                                </div>
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${status === 'connected' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                                    }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${status === 'connected' ? 'bg-green-600' : 'bg-red-600'} animate-pulse`}></span>
+                                    {status === 'connected' ? 'Conectado' : 'Desconectado'}
+                                </div>
                             </div>
                         </div>
                         <div className="p-8 flex flex-col items-center justify-center text-center">
@@ -365,19 +456,29 @@ export default function WhatsAppPage() {
                                     </div>
                                     <div className="flex flex-col gap-3">
                                         <button
-                                            onClick={handleLogout}
-                                            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold hover:bg-red-200 dark:hover:bg-red-900/40 transition-all mx-auto shadow-sm"
+                                            onClick={handleSyncRepair}
+                                            disabled={isSyncing}
+                                            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all mx-auto shadow-lg shadow-primary/20 disabled:opacity-50"
                                         >
-                                            <LogOut className="w-4 h-4" />
-                                            Desconectar WhatsApp
+                                            <Settings className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                                            {isSyncing ? 'Sincronizando...' : 'Sincronizar & Reparar IA'}
                                         </button>
-                                        <button
-                                            onClick={handleDeleteInstance}
-                                            className="flex items-center gap-2 px-6 py-2 rounded-lg text-red-500 hover:text-red-700 text-xs font-medium transition-all mx-auto border border-red-200 hover:border-red-500 bg-white"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                            Excluir Instância (Cuidado)
-                                        </button>
+                                        <div className="flex gap-2 mx-auto mt-2">
+                                            <button
+                                                onClick={handleLogout}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-bold hover:bg-gray-200 transition-all shadow-sm"
+                                            >
+                                                <LogOut className="w-3.5 h-3.5" />
+                                                Desconectar
+                                            </button>
+                                            <button
+                                                onClick={handleDeleteInstance}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-red-500 hover:text-red-700 text-xs font-bold transition-all border border-red-100 hover:border-red-200 bg-white"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Excluir Instância
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (

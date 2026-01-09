@@ -202,19 +202,18 @@ export default function PackageDetailsPage() {
                                         Incluso no Pacote
                                     </h4>
                                     <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                                        {pkg.inclusions && pkg.inclusions.length > 0 ? (
-                                            pkg.inclusions.map((item: string, i: number) => (
-                                                <li key={i} className="flex gap-2 items-center">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                                    {item}
-                                                </li>
-                                            ))
-                                        ) : (
-                                            <>
-                                                <li className="flex gap-2">Hospedagem inclusa</li>
-                                                <li className="flex gap-2">Assistência 24h</li>
-                                            </>
-                                        )}
+                                        {/* Standard Inclusions */}
+                                        <li className="flex gap-2 items-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                            Assistência 24h
+                                        </li>
+                                        {/* Dynamic Inclusions */}
+                                        {pkg.inclusions?.map((item: string, i: number) => (
+                                            <li key={i} className="flex gap-2 items-center">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                                {item}
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                                 <div className="space-y-4 rounded-3xl bg-red-50 dark:bg-red-900/10 p-6 border border-red-100 dark:border-red-900/20">
@@ -223,18 +222,18 @@ export default function PackageDetailsPage() {
                                         Não Incluso
                                     </h4>
                                     <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                                        {pkg.exclusions && pkg.exclusions.length > 0 ? (
-                                            pkg.exclusions.map((item: string, i: number) => (
-                                                <li key={i} className="flex gap-2 items-center">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                    {item}
-                                                </li>
-                                            ))
-                                        ) : (
-                                            <>
-                                                <li className="flex gap-2">Almoços e jantares</li>
-                                                <li className="flex gap-2">Despesas pessoais</li>
-                                            </>
+                                        {/* Dynamic Exclusions */}
+                                        {pkg.exclusions?.map((item: string, i: number) => (
+                                            <li key={i} className="flex gap-2 items-center">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                                {item}
+                                            </li>
+                                        ))}
+                                        {/* Default if no dynamic exclusions */}
+                                        {(!pkg.exclusions || pkg.exclusions.length === 0) && (
+                                            <li className="flex gap-2 items-center text-slate-400 italic">
+                                                Consulte detalhes com nossos consultores
+                                            </li>
                                         )}
                                     </ul>
                                 </div>
