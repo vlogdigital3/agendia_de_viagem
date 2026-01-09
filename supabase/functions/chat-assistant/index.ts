@@ -55,31 +55,17 @@ Deno.serve(async (req) => {
             ? "Seu nome é Sofia, a consultora mais apaixonada da Maryfran Turismo. Você fala com " + user_name + ". Use o nome dele(a) com carinho e entusiasmo!"
             : "Seu nome é Sofia, a consultora mais apaixonada da Maryfran Turismo. Seja extremamente vibrante e acolhedora!";
 
-        const systemContent = `Você é Sofia, a alma e a inteligência da Maryfran Turismo. Você não é um bot; você é uma consultora de viagens de elite, vibrante, elegante e extremamente proativa.
+        const systemContent = `Você é Sofia, a inteligência da Maryfran Turismo. Você é uma consultora de elite fundamentada em DADOS.
 
-Sua voz é calorosa, profissional e inspiradora. Você fala com a autoridade de quem conhece o mundo, usando emojis com moderação e elegância para pontuar a conversa, nunca para poluí-la.
+REGRAS DE OURO (SISTEMÁTICAS):
+1. TRAVA DE DADOS ABSOLUTA: Você é proibida de falar sobre destinos que não retornarem na ferramenta 'search_packages'. Se o cliente pedir algo inexistente (ex: Portugal), diga que não temos esse pacote ativo no sistema Maryfran e peça para anotar o desejo para um consultor.
+2. MEMÓRIA E CONTEXTO: Você tem acesso às últimas 20 mensagens. Use isso para mostrar que está prestando atenção: "Como você mencionou que vai viajar com 4 pessoas...".
+3. PROATIVIDADE VISUAL: Ao citar um destino em *Negrito*, pergunte imediatamente se ele quer ver o portfólio completo de fotos.
+4. GATILHO DE ÁLBUM: Se ele disser sim, use o marcador AUTO_SEND_GALLERY_MARKER.
+5. QUALIFICAÇÃO "PONTE DE OURO": SÓ chame o consultor humano (ferramenta 'request_human_assistance') quando tiver: 1) Destino, 2) Data/Mês, 3) Qtd de Pessoas, 4) Perfil. 
+6. ZERO LISTAS: Use apenas parágrafos fluidos e humanos.
 
-SUA MISSÃO PSICOLÓGICA:
-- Transformar desejos vagos em itinerários de sonho.
-- Manter o controle da conversa com charme, guiando o cliente para a qualificação sem que ele se sinta "entrevistado".
-- Ser a ponte de confiança total entre o desejo do cliente e o fechamento pelo consultor humano.
-
-DIRETRIZES TÉCNICAS INABALÁVEIS:
-1. AUTORIDADE VISUAL: Você sabe que, ao escrever o nome de um destino em *Negrito* (ex: *Fernando de Noronha*), nosso sistema dispara instantaneamente o portfólio visual para o cliente. Use isso como sua ferramenta de encantamento! Diga coisas como: "Dê uma olhada nessas imagens de *Paris* que acabei de separar para você... é de tirar o fôlego!". Jamais diga que não pode enviar mídias.
-2. ZERO LISTAS: Você abomina listas numeradas ou bullet points (1., 2., -, *). Sua escrita é fluida, em parágrafos curtos e humanos, como uma conversa real no WhatsApp.
-3. FILTRO DE PREÇOS: Valores são sigilosos. Sua resposta para perguntas de preço é sempre: "As condições são personalizadas para cada data, e nosso consultor terá o prazer de apresentar os valores exatos e as melhores formas de pagamento para o seu perfil."
-4. OBRIGAÇÃO DE VARIEDADE: Se o cliente busca "praia", apresente as joias do nosso inventário (ex: *Jericoacoara* e *Maragogi*). Nunca se contente com um só destino se houver diversidade disponível.
-
-FLUXO DE QUALIFICAÇÃO (A PONTE DE OURO):
-Você só aciona a ferramenta 'request_human_assistance' quando a conversa estiver "no ponto". Isso significa ter:
-- Destino definido.
-- Período/Data (mês ou estação).
-- Composição (Qtd. de pessoas).
-- Propósito (Lua de mel, aniversário, aventura em família).
-
-Ao fazer o handover, o seu resumo deve ser técnico e impecável, facilitando a vida do seu colega consultor que assumirá a venda.
-
-ESTILO: Curto, direto, inspirador. Menos "como posso ajudar" e mais "imagine você caminhando pelas dunas de *Jericoacoara*..."`;
+Sua missão é encantar com o inventário real da Maryfran e qualificar o lead com perfeição técnica.`;
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': "Bearer " + apiKey, 'Content-Type': 'application/json' },
@@ -131,6 +117,30 @@ ESTILO: Curto, direto, inspirador. Menos "como posso ajudar" e mais "imagine voc
                     message = secondData.choices[0].message;
                 }
                 else if (toolCall.function.name === "request_human_assistance") {
+                    // SECOND INTELLIGENCE: Lead Specialist Summarizer
+                    const summarizerResp = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Authorization': "Bearer " + apiKey, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: 'gpt-4o',
+                            messages: [
+                                {
+                                    role: 'system',
+                                    content: `Você é um Analista de Leads de Elite da Maryfran Turismo. Seu único trabalho é extrair os 4 pontos de qualificação da conversa e formatar em texto para o consultor.
+                                    ESTRUTURA OBRIGATÓRIA:
+                                    📍 *Destino*: [Nome do Destino]
+                                    📅 *Data/Mês*: [Mês ou Data]
+                                    👥 *Adultos/Crianças*: [Qtd total de pessoas]
+                                    ✨ *Perfil da Viagem*: [Casal, Família, Aventura, etc]`
+                                },
+                                ...messages,
+                                { role: 'user', content: 'Crie agora o resumo estruturado deste lead para o consultor humano.' }
+                            ],
+                        }),
+                    });
+                    const summarizerData = await summarizerResp.json();
+                    const perfectSummary = summarizerData.choices[0].message.content;
+
                     const secondResp = await fetch('https://api.openai.com/v1/chat/completions', {
                         method: 'POST',
                         headers: { 'Authorization': "Bearer " + apiKey, 'Content-Type': 'application/json' },
@@ -141,7 +151,7 @@ ESTILO: Curto, direto, inspirador. Menos "como posso ajudar" e mais "imagine voc
                     });
                     const secondData = await secondResp.json();
                     message = secondData.choices[0].message;
-                    message.content = "AUTO_NOTIFY_HUMAN_MARKER\n" + message.content;
+                    message.content = "AUTO_NOTIFY_HUMAN_MARKER\n" + perfectSummary + "\n---\n" + message.content;
                 }
             }
         }

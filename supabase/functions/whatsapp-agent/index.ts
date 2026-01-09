@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
 
         const remoteJid = data.key?.remoteJid;
         const phone = remoteJid?.split('@')[0];
-        const pushName = data.pushName || 'Desconhecido';
         const isGroup = remoteJid?.includes('@g.us');
 
         // Fetch config for this specific instance
@@ -53,20 +52,39 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ success: true, message: "Not in whitelist" }), { headers: corsHeaders });
         }
 
-        const messageData = data.message;
-        const messageContent = messageData?.conversation || messageData?.extendedTextMessage?.text || messageData?.imageMessage?.caption;
+        const pushName = data.pushName || 'Desconhecido';
+        const messageContent = data.message?.conversation || data.message?.extendedTextMessage?.text || data.message?.imageMessage?.caption || "";
 
-        if (!messageContent || !phone) {
+        if (!phone || (!messageContent && !data.message?.imageMessage)) {
             return new Response(JSON.stringify({ success: true, message: "No content/phone" }), { headers: corsHeaders });
         }
 
+        // Idempotency check: Ignore if same message from same phone in the last 5 seconds
+        const { data: recentMsgs } = await supabaseClient
+            .from('chat_history')
+            .select('created_at, message')
+            .eq('session_id', phone)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (recentMsgs && recentMsgs.length > 0) {
+            const lastMsg = recentMsgs[0];
+            const lastTime = new Date(lastMsg.created_at).getTime();
+            const now = Date.now();
+            if (now - lastTime < 5000 && lastMsg.message.role === 'user' && lastMsg.message.content === messageContent) {
+                console.log(`[${instanceName}] DUPLICATE DETECTED: Ignoring repeat message from ${phone}`);
+                return new Response(JSON.stringify({ success: true, message: "Duplicate ignored" }), { headers: corsHeaders });
+            }
+        }
+
         // 4. CALL AI ASSISTANT
+        const aiCallStartTime = Date.now();
         const { data: history } = await supabaseClient
             .from('chat_history')
             .select('message')
             .eq('session_id', phone)
             .order('created_at', { ascending: true })
-            .limit(10);
+            .limit(20);
 
         const messages = (history || []).map(h => h.message);
         messages.push({ role: 'user', content: messageContent });
@@ -92,8 +110,11 @@ Deno.serve(async (req) => {
 
         // Handle Human Request Marker
         if (finalMessage.includes("AUTO_NOTIFY_HUMAN_MARKER")) {
-            const richReason = finalMessage.replace("AUTO_NOTIFY_HUMAN_MARKER", "").trim();
-            finalMessage = "Perfeito! Já passei todos os detalhes para o nosso consultor especializado. Em instantes ele entrará em contato com você por aqui mesmo para finalizarmos! 😊🚀";
+            const rawContent = finalMessage.replace("AUTO_NOTIFY_HUMAN_MARKER", "").trim();
+            const [richReason, ...goodbyeParts] = rawContent.split("---");
+            const goodbyeMessage = goodbyeParts.join("---").trim();
+
+            finalMessage = goodbyeMessage || "Perfeito! Já passei todos os detalhes para o nosso consultor especializado. Em instantes ele entrará em contato com você por aqui mesmo para finalizarmos! 😊🚀";
 
             if (config.human_agent_phone) {
                 await fetch(`${config.evolution_url}/message/sendText/${instanceName}`, {
@@ -101,7 +122,7 @@ Deno.serve(async (req) => {
                     headers: { 'Content-Type': 'application/json', 'apikey': config.evolution_apikey },
                     body: JSON.stringify({
                         number: config.human_agent_phone,
-                        text: `✅ *NOVO LEAD QUALIFICADO!*\n\n${richReason}\n\n👤 *Cliente:* ${pushName}\n📱 *WhatsApp:* ${phone}`
+                        text: `✅ *NOVO LEAD QUALIFICADO!*\n\n${richReason.trim()}\n\n👤 *Cliente:* ${pushName}\n📱 *WhatsApp:* ${phone}`
                     })
                 }).catch(() => { });
             }
@@ -126,6 +147,11 @@ Deno.serve(async (req) => {
 
             const { data: packages } = await supabaseClient.from('packages').select('title, description, images, videos').eq('active', true);
 
+            const hasGalleryMarker = finalMessage.includes("AUTO_SEND_GALLERY_MARKER");
+            if (hasGalleryMarker) {
+                finalMessage = finalMessage.replace("AUTO_SEND_GALLERY_MARKER", "").trim();
+            }
+
             const mentioned = packages?.filter((p: any) => {
                 // Use only the part before '–' to identify the destination (e.g., "Fernando de Noronha")
                 const mainName = p.title.split('–')[0].trim();
@@ -144,12 +170,12 @@ Deno.serve(async (req) => {
                 const wasJustMentioned = titleParts.some((part: string) => normalizedLast.includes(normalize(part)));
                 const userWantsMore = normalizedUser.match(/foto|imagem|detalhe|mais|ver|olha|mostra|cade|qual|onde/);
 
-                // Send card if mentioned AND (not sent in the very last msg OR user explicitly asked for more)
-                return isNowMentioned && (!wasJustMentioned || userWantsMore);
-            }) || [];
+                // Send card if mentioned AND (not sent in the very last msg OR user explicitly asked for more OR explicit marker)
+                return isNowMentioned && (!wasJustMentioned || userWantsMore || hasGalleryMarker);
+            })?.slice(0, 2) || [];
 
             for (const p of mentioned) {
-                const isDeepDive = mentioned.length === 1 && (finalMessage.length > 500 || normalizedUser.match(/detalhe|passeio|mais|foto|imagem/));
+                const isDeepDive = mentioned.length === 1 && (finalMessage.length > 500 || normalizedUser.match(/detalhe|passeio|mais|foto|imagem/) || hasGalleryMarker);
 
                 if (p.images && p.images.length > 0) {
                     // Send first image as a "Card" (Image + Caption)
