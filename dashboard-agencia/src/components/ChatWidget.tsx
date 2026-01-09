@@ -102,6 +102,7 @@ export default function ChatWidget() {
     }
 
     const handlePackageClick = (pkgTitle: string) => {
+        console.log(`[ChatWidget] Package clicked: ${pkgTitle}`)
         handleSend(undefined, `Me fale mais sobre ${pkgTitle}`)
     }
 
