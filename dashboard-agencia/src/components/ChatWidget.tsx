@@ -38,13 +38,14 @@ export default function ChatWidget() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 
-    const handleSend = async (e?: React.FormEvent) => {
+    const handleSend = async (e?: React.FormEvent, customMsg?: string) => {
         e?.preventDefault()
-        if (!message.trim() || isLoading) return
+        const textContent = customMsg || message
+        if (!textContent.trim() || isLoading) return
 
-        const userMessage = { role: 'user' as const, content: message }
+        const userMessage = { role: 'user' as const, content: textContent }
         setMessages(prev => [...prev, userMessage])
-        setMessage('')
+        if (!customMsg) setMessage('')
         setIsLoading(true)
 
         try {
@@ -93,8 +94,15 @@ export default function ChatWidget() {
             content: `Obrigada, ${leadData.name}! Seus dados foram enviados. Um de nossos consultores entrará em contato em breve pelo WhatsApp ${leadData.phone}. Até logo! ✨`
         }])
 
-        // Here you would normally send this to a lead collection endpoint
+        // Open WhatsApp directly for the user as a "premium" experience
+        const wpMsg = `Olá! Vim do site da Maryfran e gostaria de falar com um especialista. Meu nome é ${leadData.name}.`
+        window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(wpMsg)}`, '_blank')
+
         console.log("New Lead Collected:", leadData)
+    }
+
+    const handlePackageClick = (pkgTitle: string) => {
+        handleSend(undefined, `Me fale mais sobre ${pkgTitle}`)
     }
 
     return (
@@ -124,7 +132,7 @@ export default function ChatWidget() {
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="p-2 text-white/50 hover:text-white transition-colors"
+                                className="p-2 text-white/50 hover:text-white transition-colors cursor-pointer"
                             >
                                 <X className="w-6 h-6" />
                             </button>
@@ -164,7 +172,10 @@ export default function ChatWidget() {
                                                             <div className="p-3">
                                                                 <h4 className="font-bold text-gray-900 dark:text-white mb-1">{pkg.title}</h4>
                                                                 <p className="text-xs text-gray-500 line-clamp-2 mb-2">{pkg.description}</p>
-                                                                <button className="w-full py-2 bg-primary text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all">
+                                                                <button
+                                                                    onClick={() => handlePackageClick(pkg.title)}
+                                                                    className="w-full py-2 bg-primary text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all cursor-pointer z-10 relative"
+                                                                >
                                                                     Explorar Destino
                                                                 </button>
                                                             </div>
@@ -221,7 +232,7 @@ export default function ChatWidget() {
                                 </div>
                                 <button
                                     type="submit"
-                                    className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:shadow-primary/20 transition-all active:scale-95"
+                                    className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:shadow-primary/20 transition-all active:scale-95 cursor-pointer"
                                 >
                                     Falar com Especialista
                                 </button>
@@ -239,7 +250,7 @@ export default function ChatWidget() {
                                     <button
                                         type="submit"
                                         disabled={!message.trim() || isLoading}
-                                        className="p-2 bg-primary text-white rounded-xl disabled:opacity-50 disabled:grayscale transition-all hover:scale-110 active:scale-95"
+                                        className="p-2 bg-primary text-white rounded-xl disabled:opacity-50 disabled:grayscale transition-all hover:scale-110 active:scale-95 cursor-pointer"
                                     >
                                         <Send className="w-4 h-4" />
                                     </button>
