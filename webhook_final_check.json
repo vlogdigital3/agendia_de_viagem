@@ -1,0 +1,14 @@
+﻿{
+    "id":  "cmk7fsxok5ul8s24xtfkdhqgk",
+    "url":  "https://mjpwylpoedzikgbzcncr.supabase.co/functions/v1/wa",
+    "headers":  null,
+    "enabled":  true,
+    "events":  [
+                   "MESSAGES_UPSERT"
+               ],
+    "webhookByEvents":  false,
+    "webhookBase64":  false,
+    "createdAt":  "2026-01-09T22:17:44.323Z",
+    "updatedAt":  "2026-01-09T22:48:49.487Z",
+    "instanceId":  "187732ba-048c-4d07-97d1-beb9ab200147"
+}

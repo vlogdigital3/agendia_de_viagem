@@ -7,6 +7,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
     console.log(`[DEBUG] Received ${req.method} request at ${new Date().toISOString()}`);
+    console.log("[DEBUG] Headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
 
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -16,13 +17,16 @@ Deno.serve(async (req) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
         );
 
+        const rawBody = await req.text();
+        console.log("[DEBUG] Raw Body:", rawBody);
+
         let body;
         try {
-            body = await req.json();
-            console.log("[DEBUG] Webhook Body:", JSON.stringify(body));
+            body = JSON.parse(rawBody);
+            console.log("[DEBUG] Parsed Body:", JSON.stringify(body));
         } catch (e) {
-            console.error("[DEBUG] Failed to parse JSON body:", e);
-            return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: corsHeaders });
+            console.error("[DEBUG] Failed to parse JSON body:", e, "Raw Content:", rawBody);
+            return new Response(JSON.stringify({ error: "Invalid JSON", raw: rawBody }), { status: 400, headers: corsHeaders });
         }
 
         const instanceName = body.instance || 'Vlog';
@@ -52,18 +56,31 @@ Deno.serve(async (req) => {
             .eq('instance_name', instanceName)
             .single();
 
-        if (configError || !config) {
-            console.error(`[DEBUG] Config fetch error or not found for ${instanceName}:`, configError);
-            return new Response(JSON.stringify({ success: false, message: "Config not found" }), { headers: corsHeaders });
+        if (configError) {
+            console.error(`[DEBUG] Config fetch error for ${instanceName}:`, JSON.stringify(configError));
         }
 
-        if (!config.active) {
-            console.log(`[${instanceName}] Instance inactive.`);
-            return new Response(JSON.stringify({ success: true, message: "Inactive" }), { headers: corsHeaders });
+        if (!config) {
+            console.error(`[DEBUG] Config NOT FOUND for ${instanceName}.`);
+            // return new Response(JSON.stringify({ success: false, message: "Config not found" }), { headers: corsHeaders });
         }
+
+        if (config && !config.active) {
+            console.log(`[DEBUG] [${instanceName}] Instance marked as inactive in DB.`);
+            // return new Response(JSON.stringify({ success: true, message: "Inactive" }), { headers: corsHeaders });
+        }
+
+        // Use a fallback config for debugging if database is empty/missing
+        const safeConfig = config || {
+            active: true,
+            evolution_url: "https://api.vlogia.com.br",
+            evolution_apikey: "b6ff2fcd3acabca05a948b13e08bad86",
+            whitelist: [],
+            behavior: { ignore_groups: true }
+        };
 
         // Filters
-        const ignoreGroups = config.behavior?.ignore_groups ?? true;
+        const ignoreGroups = safeConfig.behavior?.ignore_groups ?? true;
         if (isGroup && ignoreGroups) {
             console.log(`[DEBUG] BLOCKED: Group message from ${remoteJid}`);
             return new Response(JSON.stringify({ success: true, message: "Group ignored" }), { headers: corsHeaders });
@@ -130,6 +147,58 @@ Deno.serve(async (req) => {
         const aiData = await aiRes.json();
         let finalMessage = aiData.content || "";
         console.log(`[DEBUG] AI Response (Length: ${finalMessage.length})`);
+
+        // 5. HANDLE GALLERY MARKER
+        if (finalMessage.includes("AUTO_SEND_GALLERY_MARKER")) {
+            console.log("[DEBUG] Gallery marker detected.");
+            const markerRegex = /AUTO_SEND_GALLERY_MARKER\[(.*?)\]/;
+            const match = finalMessage.match(markerRegex);
+
+            if (match && match[1]) {
+                const packageName = match[1].trim();
+                console.log(`[DEBUG] Extracted Package Name: "${packageName}"`);
+
+                const { data: pkgData, error: pkgError } = await supabaseClient
+                    .from('packages')
+                    .select('images')
+                    .ilike('title', `%${packageName}%`)
+                    .limit(1);
+
+                if (pkgError) console.error("[DEBUG] DB Fetch Error:", pkgError);
+
+                if (pkgData && pkgData.length > 0 && pkgData[0].images && pkgData[0].images.length > 0) {
+                    const images = pkgData[0].images;
+                    console.log(`[DEBUG] Found ${images.length} images for "${packageName}". Sending...`);
+
+                    for (const imgUrl of images) {
+                        console.log(`[DEBUG] Sending image: ${imgUrl}`);
+                        await fetch(`${config.evolution_url}/message/sendMedia/${instanceName}`, {
+                            method: 'POST',
+                            headers: { 'apikey': config.evolution_apikey, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                number: phone,
+                                media: imgUrl,
+                                mediatype: "image",
+                                caption: ""
+                            })
+                        }).catch(e => console.error(`[DEBUG] Error sending media (${imgUrl}):`, e));
+                        // Small delay between images
+                        await new Promise(r => setTimeout(r, 1500));
+                    }
+                } else {
+                    console.log(`[DEBUG] No images found for package: "${packageName}"`);
+                }
+            }
+            // Remove the marker from the text
+            finalMessage = finalMessage.replace(markerRegex, "").trim();
+        }
+
+        // 6. EXTRA SAFETY: Strip any markdown image links that the AI might have hallucinated
+        const markdownImageRegex = /!\[.*?\]\(.*?\)/g;
+        if (markdownImageRegex.test(finalMessage)) {
+            console.log("[DEBUG] Stripping hallucinated markdown image links.");
+            finalMessage = finalMessage.replace(markdownImageRegex, "").trim();
+        }
 
         // Handle handover marker
         if (finalMessage.includes("AUTO_NOTIFY_HUMAN_MARKER")) {
