@@ -10,6 +10,16 @@ import { Search, MapPin, Calendar, Headset, Tag, ShieldCheck, ArrowRight, ArrowU
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
+const slugify = (text: string) => {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')     // Replace spaces with -
+        .replace(/[^\w-]+/g, '')  // Remove all non-word chars
+        .replace(/--+/g, '-')     // Replace multiple - with single -
+}
+
 export default function HomePage() {
     const [featuredPackages, setFeaturedPackages] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -152,7 +162,11 @@ export default function HomePage() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                                 {featuredPackages.map((pkg) => (
-                                    <div key={pkg.id} className="group bg-background-light dark:bg-surface-dark rounded-[40px] overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col transition-all duration-500">
+                                    <Link
+                                        key={pkg.id}
+                                        href={`/pacote/${pkg.id}-${slugify(pkg.title)}`}
+                                        className="group bg-background-light dark:bg-surface-dark rounded-[40px] overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col transition-all duration-500 hover:-translate-y-2 cursor-pointer pb-10"
+                                    >
                                         <div className="h-72 bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
                                             {pkg.images?.[0] ? (
                                                 <img src={pkg.images[0]} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -166,7 +180,7 @@ export default function HomePage() {
                                                 DESTAQUE
                                             </div>
                                         </div>
-                                        <div className="p-10 flex flex-col flex-1">
+                                        <div className="px-10 pt-10 flex flex-col flex-1">
                                             <h3 className="text-2xl font-black text-text-main dark:text-white mb-3 group-hover:text-primary transition-colors">{pkg.title}</h3>
                                             <p className="text-base text-text-secondary dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed">
                                                 {pkg.description}
@@ -176,15 +190,14 @@ export default function HomePage() {
                                                     <span className="block text-[10px] text-text-secondary dark:text-gray-500 uppercase font-bold tracking-widest mb-1">Investimento inicial</span>
                                                     <span className="block text-3xl font-black text-primary">R$ {pkg.price.toLocaleString('pt-BR')}</span>
                                                 </div>
-                                                <Link
-                                                    href={`/pacote/${pkg.id}`}
-                                                    className="size-14 rounded-2xl bg-white dark:bg-gray-800 text-text-main dark:text-white flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300 shadow-sm hover:shadow-primary/20"
+                                                <div
+                                                    className="size-14 rounded-2xl bg-white dark:bg-gray-800 text-text-main dark:text-white flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-primary/20"
                                                 >
                                                     <ArrowUpRight className="w-7 h-7" />
-                                                </Link>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
 
                                 {featuredPackages.length === 0 && (

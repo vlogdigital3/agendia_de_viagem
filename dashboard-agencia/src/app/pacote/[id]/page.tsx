@@ -16,13 +16,18 @@ import {
 import Link from 'next/link'
 
 export default function PackageDetailsPage() {
-    const { id } = useParams()
+    const params = useParams()
+    const rawId = params?.id as string
+    // Extract UUID (first 36 characters) from "uuid-slug"
+    const id = rawId?.includes('-') ? rawId.substring(0, 36) : rawId
+
     const [pkg, setPkg] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [activeImg, setActiveImg] = useState('')
 
     useEffect(() => {
         const fetchPackage = async () => {
+            if (!id) return;
             const { data } = await supabase
                 .from('packages')
                 .select('*')
@@ -32,10 +37,13 @@ export default function PackageDetailsPage() {
             if (data) {
                 setPkg(data)
                 if (data.images?.[0]) setActiveImg(data.images[0])
+
+                // Dynamic page title for SEO
+                document.title = `${data.title} | Maryfran Turismo`
             }
             setLoading(false)
         }
-        if (id) fetchPackage()
+        fetchPackage()
     }, [id])
 
     if (loading) {
