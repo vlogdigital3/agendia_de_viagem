@@ -1,6 +1,6 @@
 'use client'
 
-import { Plane, Mail, Phone, MapPin, Globe, Camera, AtSign, CreditCard, Landmark, Banknote } from 'lucide-react'
+import { Plane, Mail, Phone, MapPin, Globe, Instagram, AtSign, CreditCard, Landmark, Banknote } from 'lucide-react'
 import Link from 'next/link'
 
 export default function PublicFooter() {
@@ -21,9 +21,12 @@ export default function PublicFooter() {
                             Transformando sonhos em destinos. Sua agência de confiança para as melhores experiências de viagem pelo Brasil e pelo mundo.
                         </p>
                         <div className="flex gap-4 mt-2">
-                            <a href="#" className="size-10 rounded-xl bg-slate-50 dark:bg-gray-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all hover:-translate-y-1"><Globe className="w-5 h-5" /></a>
-                            <a href="#" className="size-10 rounded-xl bg-slate-50 dark:bg-gray-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all hover:-translate-y-1"><Camera className="w-5 h-5" /></a>
-                            <a href="#" className="size-10 rounded-xl bg-slate-50 dark:bg-gray-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all hover:-translate-y-1"><AtSign className="w-5 h-5" /></a>
+                            <a href="https://www.instagram.com/maryfranturismo/" target="_blank" rel="noopener noreferrer" className="size-10 rounded-xl bg-slate-50 dark:bg-gray-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all hover:-translate-y-1">
+                                <Instagram className="w-5 h-5" />
+                            </a>
+                            <a href="https://www.tiktok.com/@maryfran.turismo" target="_blank" rel="noopener noreferrer" className="size-10 rounded-xl bg-slate-50 dark:bg-gray-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all hover:-translate-y-1">
+                                <TikTokIcon className="w-5 h-5" />
+                            </a>
                         </div>
                     </div>
 
@@ -78,5 +81,18 @@ export default function PublicFooter() {
                 </div>
             </div>
         </footer>
+    )
+}
+
+function TikTokIcon(props: any) {
+    return (
+        <svg
+            {...props}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.14-1.41-.33-.21-.65-.44-.95-.69-.02 2.34.01 4.68-.02 7.02-.13 5.41-5.78 8.87-10.5 6.09-4.82-2.84-5.36-9.83-1.04-13.38 1.63-1.34 3.79-1.92 5.86-1.57v4.11c-2.07-.63-4.32.74-4.64 2.87-.41 2.68 2.37 4.96 4.7 3.86 1.14-.54 1.83-1.72 1.83-2.98.01-4.79-.01-9.59 0-14.39z" />
+        </svg>
     )
 }

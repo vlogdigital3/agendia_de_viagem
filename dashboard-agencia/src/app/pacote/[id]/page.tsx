@@ -173,8 +173,8 @@ export default function PackageDetailsPage() {
                             </div>
                         </div>
 
-                        {/* Overview */}
-                        <section className="space-y-4">
+                        {/* Overview Section */}
+                        <section className="space-y-4 pt-8 border-t border-slate-100 dark:border-slate-800">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <span className="w-1 h-6 bg-primary rounded-full"></span>
                                 Visão Geral da Experiência
@@ -183,6 +183,29 @@ export default function PackageDetailsPage() {
                                 {pkg.description}
                             </p>
                         </section>
+
+                        {/* Experiência em Movimento - Videos Strategic Position */}
+                        {pkg.videos && pkg.videos.length > 0 && (
+                            <section className="space-y-6">
+                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                                    <Play className="w-6 h-6 text-red-500 fill-current" />
+                                    Experiência em Movimento
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {pkg.videos.map((url: string, idx: number) => (
+                                        <div key={idx} className="aspect-video bg-black rounded-[32px] overflow-hidden shadow-2xl group border border-slate-200 dark:border-slate-800">
+                                            <video
+                                                src={url}
+                                                controls
+                                                playsInline
+                                                preload="metadata"
+                                                className="w-full h-full object-contain"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
                         {/* Itinerary Timeline */}
                         {pkg.itinerary && pkg.itinerary.length > 0 && (
@@ -248,26 +271,6 @@ export default function PackageDetailsPage() {
                             </div>
                         </section>
 
-                        {/* Videos Section */}
-                        {pkg.videos && pkg.videos.length > 0 && (
-                            <section className="space-y-8">
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                                    <Play className="w-6 h-6 text-red-500 fill-current" />
-                                    Vídeos do Destino
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {pkg.videos.map((url: string, idx: number) => (
-                                        <div key={idx} className="aspect-video bg-black rounded-[32px] overflow-hidden shadow-2xl group border border-slate-200 dark:border-slate-800">
-                                            <video
-                                                src={url}
-                                                controls
-                                                className="w-full h-full object-contain"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
                     </div>
 
                     {/* Right Column: Sticky Sidebar */}
@@ -353,10 +356,10 @@ export default function PackageDetailsPage() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
 
             <PublicFooter />
-        </div>
+        </div >
     )
 }
 

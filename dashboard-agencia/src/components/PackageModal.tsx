@@ -109,7 +109,10 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
 
                 const { error: uploadError } = await supabase.storage
                     .from('package-media')
-                    .upload(filePath, file)
+                    .upload(filePath, file, {
+                        contentType: file.type || (type === 'image' ? 'image/jpeg' : 'video/mp4'),
+                        upsert: true
+                    })
 
                 if (uploadError) throw uploadError
 
