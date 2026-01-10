@@ -100,13 +100,17 @@ Sua missão é encantar com o inventário real da Maryfran e qualificar o lead c
                     const { query: searchQuery, category } = JSON.parse(toolCall.function.arguments);
                     const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
-                    let query = supabaseClient.from('packages').select('id, title, description, images, price').eq('active', true);
+                    let query = supabaseClient.from('packages').select('id, title, description, images, price, inclusions, exclusions, destination_city, destination_state, duration_days').eq('active', true);
                     if (category) query = query.ilike('category', `%${category}%`);
                     if (searchQuery) query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
 
                     let { data: packages } = await query.limit(10);
-                    if (!packages || packages.length === 0) {
-                        const { data: featured } = await supabaseClient.from('packages').select('id, title, description, images, price').eq('active', true).limit(3);
+
+                    // CORREÇÃO: Só mostra destaques se não for uma busca específica que falhou.
+                    // Se o usuário buscou "Paraguay" e veio vazio, TEM que ser vazio para o LLM saber que não tem.
+                    // Se o usuário não digitou nada (busca genérica) ou clicou em "ver pacotes", aí sim mostra destaques.
+                    if ((!packages || packages.length === 0) && !searchQuery) {
+                        const { data: featured } = await supabaseClient.from('packages').select('id, title, description, images, price, inclusions, exclusions, destination_city, destination_state, duration_days').eq('active', true).limit(3);
                         packages = featured;
                     }
 
