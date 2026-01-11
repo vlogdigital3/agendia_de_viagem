@@ -2,18 +2,20 @@
 
 export const runtime = 'edge'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import PublicHeader from '@/components/PublicHeader'
 import PublicFooter from '@/components/PublicFooter'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, SlidersHorizontal, ArrowUpRight, Plane, Star, ChevronLeft, ChevronRight, Heart, X } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
-export default function DestinosPage() {
+function DestinosPageContent() {
     const [packages, setPackages] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [searchTerm, setSearchTerm] = useState('')
+    const searchParams = useSearchParams()
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '')
     const [priceRange, setPriceRange] = useState(10000)
     const [sortBy, setSortBy] = useState('Recomendados')
     const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -303,5 +305,13 @@ export default function DestinosPage() {
 
             <PublicFooter />
         </div>
+    )
+}
+
+export default function DestinosPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div></div>}>
+            <DestinosPageContent />
+        </Suspense>
     )
 }

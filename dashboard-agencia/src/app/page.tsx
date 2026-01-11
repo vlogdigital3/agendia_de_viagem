@@ -8,6 +8,7 @@ import PublicHeader from '@/components/PublicHeader'
 import PublicFooter from '@/components/PublicFooter'
 import { Search, MapPin, Calendar, Headset, Tag, ShieldCheck, ArrowRight, ArrowUpRight, Plane, Star } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
 const slugify = (text: string) => {
@@ -23,6 +24,17 @@ const slugify = (text: string) => {
 export default function HomePage() {
     const [featuredPackages, setFeaturedPackages] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [destination, setDestination] = useState('')
+    const [date, setDate] = useState('')
+    const router = useRouter()
+
+    const handleSearch = () => {
+        const params = new URLSearchParams()
+        if (destination) params.set('q', destination)
+        if (date) params.set('date', date)
+
+        router.push(`/destinos?${params.toString()}`)
+    }
 
     useEffect(() => {
         const fetchFeatured = async () => {
@@ -97,6 +109,9 @@ export default function HomePage() {
                                 <input
                                     className="w-full bg-transparent border-none focus:ring-0 text-text-main dark:text-white placeholder:text-gray-400 text-sm md:text-base font-semibold outline-none"
                                     placeholder="Para onde você quer ir?"
+                                    value={destination}
+                                    onChange={(e) => setDestination(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
                             <div className="flex-1 flex items-center bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-3 border border-transparent focus-within:border-primary transition-all">
@@ -106,9 +121,14 @@ export default function HomePage() {
                                     placeholder="Quando?"
                                     type="text"
                                     onFocus={(e) => (e.target.type = 'date')}
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
                                 />
                             </div>
-                            <button className="h-14 md:h-auto md:px-10 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-sm md:text-base flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 group">
+                            <button
+                                onClick={handleSearch}
+                                className="h-14 md:h-auto md:px-10 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-sm md:text-base flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 group"
+                            >
                                 <Search className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                                 Pesquisar
                             </button>
