@@ -256,7 +256,7 @@ function DestinosPageContent() {
                                                 <span className="text-3xl font-black text-primary tracking-tighter">R$ {pkg.price.toLocaleString('pt-BR')}</span>
                                             </div>
                                             <Link
-                                                href={`/pacote/${pkg.id}`}
+                                                href={`/pacote/${pkg.slug}`}
                                                 className="bg-gray-50 dark:bg-gray-800 hover:bg-primary text-[#0d171c] dark:text-white hover:text-white size-14 rounded-2xl flex items-center justify-center transition-all shadow-sm hover:shadow-primary/30"
                                             >
                                                 <ArrowUpRight className="w-7 h-7" />

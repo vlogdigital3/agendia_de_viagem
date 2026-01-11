@@ -11,15 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
-const slugify = (text: string) => {
-    return text
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')     // Replace spaces with -
-        .replace(/[^\w-]+/g, '')  // Remove all non-word chars
-        .replace(/--+/g, '-')     // Replace multiple - with single -
-}
+
 
 export default function HomePage() {
     const [featuredPackages, setFeaturedPackages] = useState<any[]>([])
@@ -184,7 +176,7 @@ export default function HomePage() {
                                 {featuredPackages.map((pkg) => (
                                     <Link
                                         key={pkg.id}
-                                        href={`/pacote/${pkg.id}-${slugify(pkg.title)}`}
+                                        href={`/pacote/${pkg.slug}`}
                                         className="group bg-background-light dark:bg-surface-dark rounded-[40px] overflow-hidden shadow-sm hover:shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col transition-all duration-500 hover:-translate-y-2 cursor-pointer pb-10"
                                     >
                                         <div className="h-72 bg-gray-100 dark:bg-gray-800 relative overflow-hidden">

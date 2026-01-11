@@ -17,9 +17,7 @@ import Link from 'next/link'
 
 export default function PackageDetailsPage() {
     const params = useParams()
-    const rawId = params?.id as string
-    // Extract UUID (first 36 characters) from "uuid-slug"
-    const id = rawId?.includes('-') ? rawId.substring(0, 36) : rawId
+    const slug = params?.slug as string
 
     const [pkg, setPkg] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -27,11 +25,11 @@ export default function PackageDetailsPage() {
 
     useEffect(() => {
         const fetchPackage = async () => {
-            if (!id) return;
+            if (!slug) return;
             const { data } = await supabase
                 .from('packages')
                 .select('*')
-                .eq('id', id)
+                .eq('slug', slug)
                 .single()
 
             if (data) {
@@ -44,7 +42,7 @@ export default function PackageDetailsPage() {
             setLoading(false)
         }
         fetchPackage()
-    }, [id])
+    }, [slug])
 
     if (loading) {
         return (

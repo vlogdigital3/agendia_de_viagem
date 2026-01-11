@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 type Package = {
     id?: string
     title: string
+    slug?: string
     description: string
     price: number
     images: string[]
@@ -30,6 +31,16 @@ interface PackageModalProps {
     onClose: () => void
     onSuccess: () => void
     item?: Package | null
+}
+
+const generateSlug = (text: string) => {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]+/g, '')
+        .replace(/--+/g, '-')
 }
 
 export default function PackageModal({ isOpen, onClose, onSuccess, item }: PackageModalProps) {
@@ -151,6 +162,7 @@ export default function PackageModal({ isOpen, onClose, onSuccess, item }: Packa
         try {
             const payload = {
                 title,
+                slug: item?.slug || generateSlug(title),
                 description,
                 price: parseFloat(price.replace(',', '.')) || 0,
                 images,
